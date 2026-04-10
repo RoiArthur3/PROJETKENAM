@@ -1,0 +1,471 @@
+@extends('layouts.app')
+
+@section('title', 'RH - Dashboard | KENAM SERVICES')
+
+@section('content')
+@php
+    $colors = ['#4e73df','#1cc88a','#f6c23e','#36b9cc','#e74a3b','#858796','#5a5c69','#fd7e14'];
+    $totalServicePersonnel = collect($servicesData ?? [])->sum('effectif');
+@endphp
+<x-dashboard-layout title="Dashboard Ressources Humaines" icon="fa-users" subtitle="Vue d'ensemble des indicateurs RH et gestion du personnel RH">
+    <!-- KPIs -->
+    <x-slot name="kpis">
+        <x-kpi-card
+            title="Effectif Total Personnel"
+            :value="$kpis['total_personnel'] ?? 0"
+            icon="fa-users-cog"
+            color="primary"
+            subtitle="+{{ $kpis['evolution_mois'] ?? 0 }} ce mois"
+            trend="up"
+            trendValue="+{{ $kpis['evolution_mois'] ?? 0 }} ce mois"
+        />
+
+        <x-kpi-card
+            title="Présents Aujourd'hui"
+            :value="$kpis['personnel_actif'] ?? 0"
+            icon="fa-check-circle"
+            color="success"
+            subtitle="{{ $kpis['taux_presence'] ?? '0%' }} de présence"
+        />
+
+        <x-kpi-card
+            title="En Congé"
+            :value="$kpis['conges_actifs'] ?? 0"
+            icon="fa-plane"
+            color="warning"
+            subtitle="{{ $kpis['retours_prevus'] ?? 0 }} retour(s) cette semaine"
+        />
+
+        <x-kpi-card
+            title="Absents Maladie"
+            :value="$kpis['absents_maladie'] ?? 0"
+            icon="fa-hospital"
+            color="danger"
+            subtitle="{{ $kpis['personnel_essai'] ?? 0 }} en période d'essai"
+        />
+
+        <x-kpi-card
+            title="Détections Caméra"
+            :value="$facialStats['today_events'] ?? 0"
+            icon="fa-video"
+            color="dark"
+            subtitle="{{ $facialStats['online_devices'] ?? 0 }} caméras actives"
+        />
+    </x-slot>
+
+    <!-- Graphiques et Analyses -->
+    <div class="row mb-4">
+        <!-- Évolution des effectifs -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Évolution des Effectifs (6 derniers mois)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:300px;">
+                        <canvas id="effectifsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Répartition par Service -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Répartition par Service
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:220px;">
+                        <canvas id="servicesChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        @if(!empty($servicesData))
+                            @foreach($servicesData as $idx => $service)
+                            @php $pct = $totalServicePersonnel > 0 ? round(($service['effectif'] / $totalServicePersonnel) * 100, 1) : 0; @endphp
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>{{ $service['service'] }}</span>
+                                <span class="text-muted">{{ $service['effectif'] }} ({{ $pct }}%)</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 6px;">
+                                <div class="progress-bar" style="width: {{ $pct }}%; background-color: {{ $colors[$idx % count($colors)] }}"></div>
+                            </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted text-center mb-0">Aucun service configuré</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes RH & Congés en attente -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Alertes RH
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @forelse($alertes ?? [] as $alerte)
+                    <a href="{{ $alerte['link'] }}" class="text-decoration-none">
+                        <div class="alert alert-{{ $alerte['type'] }} d-flex align-items-center mb-2" role="alert" style="cursor:pointer;">
+                            <i class="fas {{ $alerte['icon'] }} me-3 fa-lg"></i>
+                            <div>{!! $alerte['message'] !!}</div>
+                        </div>
+                    </a>
+                    @empty
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>Aucune alerte RH en cours
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-info">
+                        <i class="fas fa-calendar-times me-2"></i>Congés en Attente
+                    </h6>
+                    <a href="{{ route('rh.conges.index') }}" class="btn btn-sm btn-outline-info">Tout voir</a>
+                </div>
+                <div class="card-body">
+                    @forelse($congesEnAttente ?? collect() as $conge)
+                    <a href="{{ route('rh.conges.index') }}" class="text-decoration-none">
+                        <div class="d-flex align-items-center mb-3 p-2 rounded card-hover">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">{{ $conge->personnel_nom ?? ($conge->personnel->nom ?? 'N/A') }} {{ $conge->personnel_prenoms ?? ($conge->personnel->prenoms ?? '') }}</div>
+                                <div class="small text-muted">{{ ucfirst($conge->type_conge ?? '') }} &middot; {{ $conge->nombre_jours ?? 0 }} jour(s)</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">{{ $conge->date_debut ? \Carbon\Carbon::parse($conge->date_debut)->format('d/m/Y') : '-' }}</div>
+                                <span class="badge bg-warning text-dark">En attente</span>
+                            </div>
+                        </div>
+                    </a>
+                    @empty
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-check fa-2x text-muted mb-2 d-block"></i>
+                        <p class="text-muted mb-0">Aucun congé en attente</p>
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- RECONNAISSANCE FACIALE (Rapports Caméra) -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0 border-start border-5 border-dark">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark">
+                        <i class="fas fa-id-card-alt me-2"></i>Activités Caméra Hikvision (Aujourd'hui)
+                    </h6>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-{{ ($facialStats['online_devices'] ?? 0) > 0 ? 'success' : 'danger' }} me-2">
+                           <i class="fas fa-circle me-1 small"></i> {{ ($facialStats['online_devices'] ?? 0) > 0 ? 'Caméra Connectée' : 'Caméra Hors Ligne' }}
+                        </span>
+                        <a href="{{ route('hikvision.live') }}" class="btn btn-sm btn-primary">Vue en direct</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Heure</th>
+                                    <th>Employé</th>
+                                    <th>Service</th>
+                                    <th>Appareil</th>
+                                    <th class="text-center">Précision</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($facialStats['recent_events'] ?? [] as $event)
+                                <tr>
+                                    <td class="fw-bold">{{ \Carbon\Carbon::parse($event->event_time)->format('H:i:s') }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            @if($event->pointage && $event->pointage->personnel && $event->pointage->personnel->photo_profil)
+                                                <img src="{{ asset('storage/' . $event->pointage->personnel->photo_profil) }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+                                            @endif
+                                            <span>{{ $event->pointage->personnel->nom_complet ?? 'Passant inconnu' }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">{{ $event->pointage->personnel->service ?? 'N/A' }}</span></td>
+                                    <td><small class="text-muted">{{ $event->device->name ?? 'Caméra' }}</small></td>
+                                    <td class="text-center">
+                                        <div class="progress" style="height: 5px; width: 60px; margin: 0 auto;">
+                                            <div class="progress-bar bg-success" style="width:{{ ($event->confidence_score ?? 0) * 100 }}%"></div>
+                                        </div>
+                                        <small class="small">{{ number_format(($event->confidence_score ?? 0) * 100, 0) }}%</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ route('rh.facial-pointage.index') }}" class="btn btn-sm btn-icon btn-light"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-3 text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>Aucune détection faciale aujourd'hui
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Rapides -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>Actions Rapides
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.personnel.create') }}" class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm">
+                                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                <span class="fw-bold">Niv. Personnel</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.pointages.index') }}" class="btn btn-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm">
+                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                <span class="fw-bold">Pointages</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.conges.index') }}" class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm text-white">
+                                <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                                <span class="fw-bold">Congés</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.paie.index') }}" class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm text-dark">
+                                <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                                <span class="fw-bold">Paie / Bulletins</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.personnel.contrats.index') }}" class="btn btn-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm">
+                                <i class="fas fa-file-contract fa-2x mb-2"></i>
+                                <span class="fw-bold">Contrats RH</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <a href="{{ route('rh.personnel.index') }}" class="btn btn-dark w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 rounded-4 shadow-sm">
+                                <i class="fas fa-list fa-2x mb-2"></i>
+                                <span class="fw-bold">Liste Personnel</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dernières Embauches & Indicateurs par Service -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-users-cog me-2"></i>Dernières Embauches
+                    </h6>
+                    <a href="{{ route('rh.employes.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
+                </div>
+                <div class="card-body">
+                    @forelse($recentHires ?? collect() as $hire)
+                    @php
+                        $initials = collect(explode(' ', $hire->nom ?? $hire->name))->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(2)->implode('');
+                        $bgColors = ['bg-primary','bg-success','bg-warning','bg-info','bg-danger'];
+                    @endphp
+                    <a href="{{ route('rh.employes.show', $hire->id) }}" class="text-decoration-none">
+                        <div class="d-flex align-items-center mb-3 p-2 rounded card-hover">
+                            <div class="avatar-circle {{ $bgColors[$loop->index % count($bgColors)] }} text-white me-3">{{ $initials }}</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">{{ $hire->nom ?? $hire->name }} {{ $hire->prenoms ?? '' }}</div>
+                                <div class="text-muted small">{{ ucfirst($hire->poste ?? $hire->role ?? '') }} {{ $hire->contrat ? '· '.$hire->contrat : '' }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">Embauché</span>
+                                <div class="text-muted small">{{ $hire->date_embauche ? \Carbon\Carbon::parse($hire->date_embauche)->format('d/m/Y') : '-' }}</div>
+                            </div>
+                        </div>
+                    </a>
+                    @empty
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-plus fa-2x text-muted mb-2 d-block"></i>
+                        <p class="text-muted mb-0">Aucune embauche récente</p>
+                    </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-building me-2"></i>Présence par Service
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @forelse($servicesData ?? [] as $idx => $service)
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small">{{ $service['service'] }}</span>
+                            <span class="small text-muted">{{ $service['presents'] }}/{{ $service['effectif'] }} ({{ $service['taux_presence'] }}%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {{ $service['taux_presence'] >= 80 ? 'bg-success' : ($service['taux_presence'] >= 50 ? 'bg-warning' : 'bg-danger') }}" style="width: {{ $service['taux_presence'] }}%"></div>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center py-3">
+                        <i class="fas fa-building fa-2x text-muted mb-2 d-block"></i>
+                        <p class="text-muted mb-0">Aucun service configuré</p>
+                    </div>
+                    @endforelse
+
+                    @if(!empty($kpis))
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h5 mb-0 fw-bold text-success">{{ $kpis['taux_presence'] ?? '0%' }}</div>
+                            <small class="text-muted">Présence globale</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0 fw-bold text-primary">{{ $kpis['personnel_actif'] ?? 0 }}</div>
+                            <small class="text-muted">Actifs</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0 fw-bold text-warning">{{ $kpis['personnel_essai'] ?? 0 }}</div>
+                            <small class="text-muted">En essai</small>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ </x-dashboard-layout>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const rawEvolution = @json($evolutionData ?? []);
+    const rawServices = @json($servicesData ?? []);
+    const chartColors = ['#4e73df','#1cc88a','#f6c23e','#36b9cc','#e74a3b','#858796','#5a5c69','#fd7e14'];
+
+    // Évolution des effectifs (données du controller: [{month, nouvelles, departs, total}])
+    const evoLabels = rawEvolution.map(e => e.month);
+    const evoTotal = rawEvolution.map(e => e.total);
+    const evoNouvelles = rawEvolution.map(e => e.nouvelles);
+    const evoDeparts = rawEvolution.map(e => e.departs);
+
+    const effectifsCtx = document.getElementById('effectifsChart');
+    if (effectifsCtx) {
+        new Chart(effectifsCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: evoLabels,
+                datasets: [
+                    {
+                        label: 'Effectif Total',
+                        data: evoTotal,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Nouvelles embauches',
+                        data: evoNouvelles,
+                        borderColor: '#1cc88a',
+                        backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        borderDash: [5, 5]
+                    },
+                    {
+                        label: 'Départs',
+                        data: evoDeparts,
+                        borderColor: '#e74a3b',
+                        backgroundColor: 'rgba(231, 74, 59, 0.1)',
+                        tension: 0.4,
+                        fill: false,
+                        borderDash: [5, 5]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    }
+
+    // Répartition par service (données du controller: [{service, effectif, presents, taux_presence}])
+    const svcLabels = rawServices.map(s => s.service);
+    const svcData = rawServices.map(s => s.effectif);
+
+    const servicesCtx = document.getElementById('servicesChart');
+    if (servicesCtx) {
+        new Chart(servicesCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: svcLabels,
+                datasets: [{
+                    data: svcData,
+                    backgroundColor: chartColors.slice(0, svcLabels.length),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } } }
+            }
+        });
+    }
+});
+</script>
+@endpush
+
+<style>
+.avatar-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 0.85rem; flex-shrink: 0;
+}
+.card-hover { transition: all 0.2s ease; }
+.card-hover:hover { transform: translateY(-1px); box-shadow: 0 .25rem .5rem rgba(0,0,0,.1) !important; background-color: #f8f9fc; }
+</style>
+@endsection

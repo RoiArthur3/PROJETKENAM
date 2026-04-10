@@ -1,0 +1,78 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Comptabilite\Tresorerie\DashboardController;
+use App\Http\Controllers\Tresorerie\CaisseController;
+use App\Http\Controllers\Tresorerie\ApprovisionnementController;
+use App\Http\Controllers\DepenseCaisseController;
+use App\Http\Controllers\Comptabilite\Tresorerie\RapprochementController;
+
+// Tableau de bord de la trésorerie
+Route::get('/', [DashboardController::class, 'index'])
+    ->name('dashboard')  // Nom de base, le préfixe sera ajouté automatiquement
+    ->middleware(['check.admin:treasury']);
+
+// Alias pour la route du tableau de bord (compatibilité avec le menu)
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard.alt')  // Nom différent pour éviter le conflit
+    ->middleware(['check.admin:treasury']);
+
+// Routes pour la gestion des caisses
+Route::prefix('caisses')->name('caisses.')->middleware(['check.admin:treasury'])->group(function () {
+    Route::get('/', [CaisseController::class, 'index'])->name('index');
+    Route::get('/create', [CaisseController::class, 'create'])->name('create');
+    Route::post('/', [CaisseController::class, 'store'])->name('store');
+    Route::get('/{caisse}', [CaisseController::class, 'show'])->name('show');
+    Route::get('/{caisse}/edit', [CaisseController::class, 'edit'])->name('edit');
+    Route::put('/{caisse}', [CaisseController::class, 'update'])->name('update');
+    Route::delete('/{caisse}', [CaisseController::class, 'destroy'])->name('destroy');
+
+    // Historique des mouvements de caisse
+    Route::get('/{caisse}/historique', [CaisseController::class, 'historique'])->name('historique');
+});
+
+// Routes pour les approvisionnements de caisse
+Route::prefix('approvisionnements')->name('approvisionnements.')->middleware(['check.admin:treasury'])->group(function () {
+    Route::get('/', [ApprovisionnementController::class, 'index'])->name('index');
+    Route::get('/create', [ApprovisionnementController::class, 'create'])->name('create');
+    Route::post('/', [ApprovisionnementController::class, 'store'])->name('store');
+    Route::get('/{approvisionnement}', [ApprovisionnementController::class, 'show'])->name('show');
+
+    // Workflow de validation
+    Route::post('/{approvisionnement}/valider', [ApprovisionnementController::class, 'valider'])
+        ->name('valider');
+    Route::post('/{approvisionnement}/rejeter', [ApprovisionnementController::class, 'rejeter'])
+        ->name('rejeter');
+    Route::post('/{approvisionnement}/decaisser', [ApprovisionnementController::class, 'decaisser'])
+        ->name('decaisser');
+});
+
+// Routes pour les dépenses de caisse
+Route::prefix('depenses')->name('depenses.')->middleware(['check.admin:treasury'])->group(function () {
+    Route::get('/', [DepenseCaisseController::class, 'index'])->name('index');
+    Route::get('/create', [DepenseCaisseController::class, 'create'])->name('create');
+    Route::post('/', [DepenseCaisseController::class, 'store'])->name('store');
+    Route::get('/{depense}', [DepenseCaisseController::class, 'show'])->name('show');
+
+    // Validation des dépenses
+    Route::post('/{depense}/valider', [DepenseCaisseController::class, 'valider'])
+        ->name('valider');
+    Route::post('/{depense}/rejeter', [DepenseCaisseController::class, 'rejeter'])
+        ->name('rejeter');
+});
+
+// Routes pour les rapprochements de caisse
+Route::prefix('rapprochements')->name('rapprochements.')->middleware(['check.admin:treasury'])->group(function () {
+    Route::get('/', [RapprochementController::class, 'index'])->name('index');
+    Route::get('/create', [RapprochementController::class, 'create'])->name('create');
+    Route::post('/', [RapprochementController::class, 'store'])->name('store');
+    Route::get('/{rapprochement}', [RapprochementController::class, 'show'])->name('show');
+    Route::post('/{rapprochement}/valider', [RapprochementController::class, 'valider'])->name('valider');
+});
+
+// API pour le dashboard
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/solde-caisses', [DashboardController::class, 'getSoldeCaisses'])->name('solde-caisses');
+    Route::get('/avances-ouvertes', [DashboardController::class, 'getAvancesOuvertes'])->name('avances-ouvertes');
+    Route::get('/depenses-mensuelles', [DashboardController::class, 'getDepensesMensuelles'])->name('depenses-mensuelles');
+});

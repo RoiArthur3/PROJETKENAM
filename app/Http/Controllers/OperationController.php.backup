@@ -1,0 +1,1067 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Models\Operation;
+use App\Models\OperationStatusLog;
+use App\Models\ServiceOperationnel;
+use App\Models\TypeOperation;
+use App\Services\EmailNotificationService;
+use App\Mail\SendEmail;
+
+
+class OperationController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $query = Operation::with(['client', 'type', 'operationalService']);
+
+        // Filtrage par utilisateur si non admin
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        if (!in_array($userRole, ['admin', 'superadmin'])) {
+            $query->where(function($subQuery) use ($user) {
+                $subQuery->where('user_id', $user->id)
+                        ->orWhere('demandeur_email', $user->email)
+                        ->orWhere('demandeur_name', $user->name);
+            });
+        }
+
+        // Filtres de recherche
+        if ($request->has('q') && $request->q) {
+            $query->where(function($q) use ($request) {
+                $q->where('titre', 'like', '%' . $request->q . '%')
+                  ->orWhere('description', 'like', '%' . $request->q . '%')
+                  ->orWhere('demandeur_name', 'like', '%' . $request->q . '%');
+            });
+        }
+
+        if ($request->has('statut') && $request->statut) {
+            $query->where('statut_courant', $request->statut);
+        }
+
+        if ($request->has('priorite') && $request->priorite) {
+            $query->where('priorite', $request->priorite);
+        }
+
+        $operations = $query->latest()->paginate(15);
+
+        return view('operations.index', compact('operations', 'user'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        $types = TypeOperation::orderBy('libelle')->get();
+        $services = ServiceOperationnel::whereNotNull('nom')->orderBy('nom')->get();
+        return view('operations.create', compact('types', 'services'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'montant' => 'nullable|numeric|min:0',
+            'priorite' => 'required|in:urgente,haute,moyenne,basse',
+            'echeance' => 'nullable|date|after_or_equal:today',
+            'destinataire_principal' => 'required|integer|exists:services_operationnels,id',
+            'type_operation_id' => 'required|integer|exists:types_operations,id',
+            'services_cc' => 'nullable|string',
+            'fichiers.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
+            'draft' => 'sometimes|boolean',
+        ]);
+
+        // Validation personnalisée pour les services CC
+        if (!empty($validated['services_cc'])) {
+            $ccServiceIds = explode(',', $validated['services_cc']);
+            foreach ($ccServiceIds as $serviceId) {
+                $serviceId = trim($serviceId);
+                if (!empty($serviceId) && !is_numeric($serviceId)) {
+                    return back()
+                        ->withInput()
+                        ->withErrors(['services_cc' => 'Les services CC doivent être des IDs valides']);
+                }
+
+                if (!empty($serviceId) && !ServiceOperationnel::where('id', $serviceId)->exists()) {
+                    return back()
+                        ->withInput()
+                        ->withErrors(['services_cc' => "Le service CC avec l'ID $serviceId n'existe pas"]);
+                }
+            }
+        }
+
+        try {
+            $user = Auth::user();
+            $isDraft = $request->has('draft');
+
+            #Enregistrement de l'opération
+            $operation = new Operation();
+            $operation->type = 'operation';
+            $operation->titre = $validated['titre'];
+            $operation->description = $validated['description'] ?? null;
+            $operation->montant = $validated['montant'] ?? null;
+            $operation->date_operation = now();
+            $operation->priorite = $validated['priorite'];
+            $operation->echeance = $validated['echeance'] ?? null;
+            $operation->type_operation_id = $validated['type_operation_id'];
+            $operation->operational_service_id = $validated['destinataire_principal'];
+            $operation->statut_courant = $isDraft ? 'brouillon' : 'pending_validation';
+            $operation->demandeur_name = $user?->name ?? 'Démo';
+            $operation->demandeur_email = $user?->email ?? config('mail.from.address');
+            $operation->user_id = $user?->id;
+            $operation->save();
+
+            // Gestion des pièces jointes
+            if ($request->hasFile('fichiers')) {
+                $fichiers = [];
+                foreach ($request->file('fichiers') as $file) {
+                    $path = $file->store('operations/' . $operation->id . '/fichiers', 'public');
+                    $fichiers[] = [
+                        'operation_id' => $operation->id,
+                        'nom_original' => $file->getClientOriginalName(),
+                        'chemin' => $path,
+                        'type_fichier' => $file->getClientMimeType(),
+                        'taille' => $file->getSize(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                $operation->fichiers()->createMany($fichiers);
+            }
+
+            // Enregistrement du statut
+            \App\Models\OperationStatusLog::create([
+                'operation_id' => $operation->id,
+                'from_status' => null,
+                'to_status' => $isDraft ? 'brouillon' : 'pending_validation',
+                'user_name' => $user ? $user->name : 'Système',
+                'user_id' => $user ? $user->id : null,
+                'commentaire' => $isDraft ? 'Enregistré comme brouillon' : 'Soumis pour validation',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Créer une étape de validation pour le destinataire principal
+            if (!$isDraft) {
+                \DB::table('operation_service_validation')->insert([
+                    'operation_id' => $operation->id,
+                    'service_operationnel_id' => $validated['destinataire_principal'],
+                    'ordre_validation' => 1,
+                    'statut' => 'EN_COURS',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            # Récupération de l'url de validation
+            $url = request()->getSchemeAndHttpHost() . "/operations/{$operation->id}/validate";
+
+            # Envoie de mail au destinataire principal (seulement si ce n'est pas un brouillon)
+            if (!$isDraft) {
+                try {
+                    // Récupérer le destinataire principal
+                    $destinatairePrincipal = ServiceOperationnel::find($validated['destinataire_principal']);
+
+                    if ($destinatairePrincipal && !empty($destinatairePrincipal->email) && filter_var($destinatairePrincipal->email, FILTER_VALIDATE_EMAIL)) {
+                        // Préparer les emails en CC
+                        $ccEmails = [];
+                        if (!empty($validated['services_cc'])) {
+                            $ccServiceIds = explode(',', $validated['services_cc']);
+                            foreach ($ccServiceIds as $serviceId) {
+                                $serviceCc = ServiceOperationnel::find(trim($serviceId));
+                                if ($serviceCc && !empty($serviceCc->email) && filter_var($serviceCc->email, FILTER_VALIDATE_EMAIL)) {
+                                    $ccEmails[] = $serviceCc->email;
+                                }
+                            }
+                        }
+
+                        // Envoyer l'email au destinataire principal avec les services en CC
+                        $mail = new SendEmail($operation, $url);
+                        if (!empty($ccEmails)) {
+                            $mail->cc($ccEmails);
+                        }
+                        Mail::to($destinatairePrincipal->email)->send($mail);
+                    }
+                } catch (\Exception $e) {
+                    // Ne pas bloquer la création si l'envoi d'email échoue
+                    Log::error("Erreur lors de l'envoi de l'email pour l'opération {$operation->id}: " . $e->getMessage());
+                    // On peut ajouter un message flash d'avertissement si nécessaire
+                    session()->flash('warning', "L'opération a été créée mais l'email de notification n'a pas pu être envoyé. Vérifiez les adresses emails des services.");
+                }
+            }
+
+
+            return redirect()->route('operations.index')
+                ->with('success', $isDraft ? 'Opération enregistrée comme brouillon.' : 'Opération créée avec succès');
+
+        } catch (\Throwable $e) {
+            return back()->withInput()
+                ->with('error', 'Erreur : ' . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * Review operation for validation (temporary signed route)
+     */
+    public function reviewOperation(Operation $operation, $step)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Récupérer les étapes de validation
+        $validationSteps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->orderBy('ordre_validation')
+            ->get();
+
+        return view('operations.review', compact('operation', 'validationSteps', 'step'));
+    }
+
+    /**
+     * Submit review for validation
+     */
+    public function submitReview(Operation $operation, $step, Request $request)
+    {
+        $validated = $request->validate([
+            'commentaire' => 'nullable|string|max:500',
+            'action' => 'required|in:approve,reject'
+        ]);
+
+        $user = Auth::user();
+
+        // Logique de validation/rejet ici
+        // ...
+
+        return redirect()->route('operations.show', $operation->id)
+            ->with('success', 'Validation soumise avec succès');
+    }
+
+    /**
+     * Page d'exécution d'une opération
+     */
+    public function execution(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Récupérer les étapes de validation
+        $steps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get([
+                'operation_service_validation.*',
+                'services_operationnels.nom as service_name',
+                'services_operationnels.email as service_email'
+            ]);
+
+        return view('operations.execution', compact('operation', 'steps'));
+    }
+
+    /**
+     * Page de contrôle d'une opération
+     */
+    public function controle(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Récupérer les étapes de validation
+        $steps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get([
+                'operation_service_validation.*',
+                'services_operationnels.nom as service_name',
+                'services_operationnels.email as service_email'
+            ]);
+
+        return view('operations.controle', compact('operation', 'steps'));
+    }
+
+    /**
+     * Page des coûts d'une opération
+     */
+    public function couts(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Récupérer les étapes de validation
+        $steps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get([
+                'operation_service_validation.*',
+                'services_operationnels.nom as service_name',
+                'services_operationnels.email as service_email'
+            ]);
+
+        return view('operations.couts', compact('operation', 'steps'));
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Récupérer l'étape de validation actuelle
+        $currentStep = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->where('statut', 'EN_COURS')
+            ->first();
+
+        // S'il n'y a pas d'étape en cours, récupérer la première étape EN_ATTENTE
+        if (!$currentStep) {
+            $currentStep = \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('statut', 'EN_ATTENTE')
+                ->orderBy('ordre_validation')
+                ->first();
+        }
+
+        // Récupérer toutes les étapes de validation
+        $steps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get([
+                'operation_service_validation.*',
+                'services_operationnels.nom as service_name',
+                'services_operationnels.email as service_email'
+            ]);
+
+        // Historique des statuts
+        $statusHistory = $operation->statusLogs()->with('user')->orderBy('created_at', 'desc')->get();
+
+        return view('operations.show', compact('operation', 'currentStep', 'steps', 'statusHistory'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de modifier cette opération
+        $canEdit = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canEdit) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $services = \App\Models\ServiceOperationnel::all();
+        $types = \App\Models\TypeOperation::all();
+
+        return view('operations.edit', compact('operation', 'services', 'types'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Operation $operation)
+    {
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priorite' => 'required|in:urgente,haute,moyenne,basse',
+            'echeance' => 'nullable|date|after_or_equal:today',
+            'operational_service_id' => 'required|integer|exists:operational_services,id',
+            'type_operation_id' => 'required|integer|exists:types_operations,id',
+        ]);
+
+        try {
+            $operation->update($validated);
+
+            return redirect()->route('operations.show', $operation)
+                ->with('success', 'Opération mise à jour avec succès.');
+
+        } catch (\Throwable $e) {
+            return redirect()->route('operations.edit', $operation)
+                ->withInput()
+                ->with('error', 'Une erreur est survenue lors de la mise à jour: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de supprimer cette opération
+        $canDelete = $operation->user_id === $user->id ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canDelete) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        try {
+            $operation->delete();
+
+            return redirect()->route('operations.index')
+                ->with('success', 'Opération supprimée avec succès.');
+
+        } catch (\Throwable $e) {
+            return redirect()->route('operations.index')
+                ->with('error', 'Une erreur est survenue lors de la suppression: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Dashboard des opérations
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Statistiques personnelles de l'utilisateur
+        $userOperations = Operation::where(function($query) use ($user) {
+            $query->where('user_id', $user->id)
+                  ->orWhere('demandeur_email', $user->email)
+                  ->orWhere('demandeur_name', $user->name);
+        });
+
+        $stats = [
+            'total_operations' => $userOperations->count(),
+            'operations_en_cours' => $userOperations->where('statut_courant', 'en_cours')->count(),
+            'operations_terminees' => $userOperations->where('statut_courant', 'termine')->count(),
+            'operations_en_retard' => $userOperations->where('echeance', '<', now())
+                                         ->where('statut_courant', '!=', 'termine')->count(),
+        ];
+
+        // Opérations récentes de l'utilisateur
+        $recentOperations = $userOperations->with(['client', 'type', 'operationalService'])
+                                   ->latest()
+                                   ->limit(10)
+                                   ->get();
+
+        return view('operations.dashboard', compact('stats', 'recentOperations'));
+    }
+
+    /**
+     * Afficher les requêtes personnelles de l'utilisateur
+     */
+    public function myRequests(Request $request)
+    {
+        $user = Auth::user();
+
+        $operations = Operation::where(function($query) use ($user) {
+            $query->where('user_id', $user->id)
+                  ->orWhere('demandeur_email', $user->email)
+                  ->orWhere('demandeur_name', $user->name);
+        })
+        ->with(['type', 'operationalService'])
+        ->latest()
+        ->paginate(15);
+
+        return view('operations.my-requests', compact('operations'));
+    }
+
+    /**
+     * Afficher les opérations assignées à l'utilisateur
+     */
+    public function myOperations(Request $request)
+    {
+        $user = Auth::user();
+
+        $operations = Operation::where(function($query) use ($user) {
+            $query->where('user_id', $user->id)
+                  ->orWhere('demandeur_email', $user->email)
+                  ->orWhere('demandeur_name', $user->name);
+        })
+        ->with(['client', 'type', 'operationalService'])
+        ->latest()
+        ->paginate(15);
+
+        return view('operations.my-operations', compact('operations'));
+    }
+
+    /**
+     * Suivi détaillé d'une opération
+     */
+    public function tracking(Operation $operation)
+    {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a le droit de voir cette opération
+        $canView = $operation->user_id === $user->id ||
+                   $operation->demandeur_email === $user->email ||
+                   $operation->demandeur_name === $user->name ||
+                   in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$canView) {
+            abort(403, 'Accès non autorisé à cette opération');
+        }
+
+        $operation->load(['client', 'type', 'operationalService', 'fichiers']);
+
+        // Historique des statuts
+        $statusHistory = $operation->statusLogs()->with('user')->orderBy('created_at', 'desc')->get();
+
+        return view('operations.show', compact('operation', 'statusHistory'));
+    }
+
+    /**
+     * Opérations en attente de validation
+     */
+    public function pendingValidation()
+    {
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Si l'utilisateur est admin ou superadmin, voir toutes les validations en attente
+        if (in_array($userRole, ['admin', 'superadmin'])) {
+            $validations = Operation::where('statut_courant', 'pending_validation')
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        } else {
+            // Pour les agents et autres utilisateurs non-admin, voir uniquement leurs propres requêtes en attente
+            $validations = Operation::where('statut_courant', 'pending_validation')
+                ->where(function($query) use ($user) {
+                    // Uniquement les opérations créées par l'utilisateur
+                    $query->where('user_id', $user->id)
+                          ->orWhere('demandeur_email', $user->email)
+                          ->orWhere('demandeur_name', $user->name);
+                })
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        }
+
+        return view('validations.pending', compact('validations'));
+    }
+
+    /**
+     * Opérations approuvées
+     */
+    public function approvedValidation()
+    {
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Si l'utilisateur est admin ou superadmin, voir toutes les validations approuvées
+        if (in_array($userRole, ['admin', 'superadmin'])) {
+            $operations = Operation::where('statut_courant', 'approuvee')
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        } else {
+            // Pour les autres utilisateurs, voir uniquement leurs propres requêtes approuvées
+            // ET les opérations où ils sont validateurs
+            $operations = Operation::where('statut_courant', 'approuvee')
+                ->where(function($query) use ($user) {
+                    // Opérations créées par l'utilisateur
+                    $query->where('user_id', $user->id)
+                          ->orWhere('demandeur_email', $user->email)
+                          ->orWhere('demandeur_name', $user->name);
+                })
+                ->orWhere(function($query) use ($user) {
+                    // Opérations où l'utilisateur est validateur
+                    $query->where('statut_courant', 'approuvee')
+                          ->whereHas('validations', function($subQuery) use ($user) {
+                              $subQuery->where('statut', 'approved')
+                                      ->whereHas('serviceOperationnel', function($serviceQuery) use ($user) {
+                                          $serviceQuery->where('email', $user->email);
+                                      });
+                          });
+                })
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        }
+
+        return view('operations.approved-validation', compact('operations'));
+    }
+
+    /**
+     * Opérations rejetées
+     */
+    public function rejectedValidation()
+    {
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Si l'utilisateur est admin ou superadmin, voir toutes les validations rejetées
+        if (in_array($userRole, ['admin', 'superadmin'])) {
+            $operations = Operation::where('statut_courant', 'rejetee')
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        } else {
+            // Pour les autres utilisateurs, voir uniquement leurs propres requêtes rejetées
+            // ET les opérations où ils sont validateurs
+            $operations = Operation::where('statut_courant', 'rejetee')
+                ->where(function($query) use ($user) {
+                    // Opérations créées par l'utilisateur
+                    $query->where('user_id', $user->id)
+                          ->orWhere('demandeur_email', $user->email)
+                          ->orWhere('demandeur_name', $user->name);
+                })
+                ->orWhere(function($query) use ($user) {
+                    // Opérations où l'utilisateur est validateur
+                    $query->where('statut_courant', 'rejetee')
+                          ->whereHas('validations', function($subQuery) use ($user) {
+                              $subQuery->where('statut', 'rejected')
+                                      ->whereHas('serviceOperationnel', function($serviceQuery) use ($user) {
+                                          $serviceQuery->where('email', $user->email);
+                                      });
+                          });
+                })
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        }
+
+        return view('operations.rejected-validation', compact('operations'));
+    }
+
+    /**
+     * Historique de toutes les validations (approuvées et rejetées)
+     */
+    public function validationHistory()
+    {
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Si l'utilisateur est admin ou superadmin, voir tout l'historique des validations
+        if (in_array($userRole, ['admin', 'superadmin'])) {
+            $operations = Operation::whereIn('statut_courant', ['approuvee', 'rejetee', 'termine'])
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        } else {
+            // Pour les autres utilisateurs, voir uniquement leur propre historique de validations
+            $operations = Operation::whereIn('statut_courant', ['approuvee', 'rejetee', 'termine'])
+                ->where(function($query) use ($user) {
+                    $query->where('user_id', $user->id)
+                          ->orWhere('demandeur_email', $user->email)
+                          ->orWhere('demandeur_name', $user->name);
+                })
+                ->with(['client', 'type', 'operationalService'])
+                ->latest()
+                ->paginate(15);
+        }
+
+        return view('validations.history', compact('operations'));
+    }
+
+    /**
+     * Page de validation spécifique pour une opération
+     */
+    public function validateOperation(Operation $operation)
+    {
+        // Vérifier que l'utilisateur a le droit de valider cette opération
+        $user = Auth::user();
+        $userRole = $user->role ?? 'user';
+
+        // Vérifier si l'utilisateur fait partie des services de validation
+        $validationSteps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->where('services_operationnels.email', $user->email)
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get();
+
+        // Si montant > 99,999 FCFA, ajouter le DG comme premier validateur
+        if ($operation->montant > 99999) {
+            $dgExists = \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('service_operationnel_id', function($query) {
+                    $query->select('id')
+                        ->from('services_operationnels')
+                        ->where('email', 'fofanakady@kenamservices.net');
+                })
+                ->exists();
+
+            if (!$dgExists) {
+                // Ajouter le DG comme première étape de validation
+                $dgService = \DB::table('services_operationnels')
+                    ->where('email', 'fofanakady@kenamservices.net')
+                    ->first();
+
+                if ($dgService) {
+                    // Décaler les étapes existantes
+                    \DB::table('operation_service_validation')
+                        ->where('operation_id', $operation->id)
+                        ->increment('ordre_validation');
+
+                    // Insérer le DG en première position
+                    \DB::table('operation_service_validation')->insert([
+                        'operation_id' => $operation->id,
+                        'service_operationnel_id' => $dgService->id,
+                        'ordre_validation' => 1,
+                        'statut' => 'EN_COURS',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        // Ajouter la compta@kenamservices.net systématiquement s'il y a un montant
+        if ($operation->montant > 0) {
+            $comptaExists = \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('service_operationnel_id', function($query) {
+                    $query->select('id')
+                        ->from('services_operationnels')
+                        ->where('email', 'compta@kenamservices.net');
+                })
+                ->exists();
+
+            if (!$comptaExists) {
+                // Ajouter la compta comme validateur
+                $comptaService = \DB::table('services_operationnels')
+                    ->where('email', 'compta@kenamservices.net')
+                    ->first();
+
+                if ($comptaService) {
+                    // Trouver le dernier ordre_validation
+                    $lastOrder = \DB::table('operation_service_validation')
+                        ->where('operation_id', $operation->id)
+                        ->max('ordre_validation') ?? 0;
+
+                    // Insérer la compta à la fin
+                    \DB::table('operation_service_validation')->insert([
+                        'operation_id' => $operation->id,
+                        'service_operationnel_id' => $comptaService->id,
+                        'ordre_validation' => $lastOrder + 1,
+                        'statut' => 'EN_COURS',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        if ($validationSteps->isEmpty() && !in_array($userRole, ['admin', 'superadmin'])) {
+            abort(403, 'Vous n\'êtes pas autorisé à valider cette opération');
+        }
+
+        // Récupérer toutes les étapes de validation
+        $allSteps = \DB::table('operation_service_validation')
+            ->where('operation_id', $operation->id)
+            ->join('services_operationnels', 'operation_service_validation.service_operationnel_id', '=', 'services_operationnels.id')
+            ->orderBy('operation_service_validation.ordre_validation')
+            ->get([
+                'operation_service_validation.*',
+                'services_operationnels.nom as service_name',
+                'services_operationnels.email as service_email'
+            ]);
+
+        // Trouver l'étape actuelle de l'utilisateur
+        $currentStep = $validationSteps->first();
+
+        // Récupérer l'historique des statuts
+        $statusHistory = \App\Models\OperationStatusLog::where('operation_id', $operation->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('operations.validate', compact('operation', 'currentStep', 'allSteps', 'statusHistory'));
+    }
+
+    /**
+     * Valider une opération (méthode POST)
+     */
+    public function processValidation(Operation $operation)
+    {
+        // Logique de validation simple
+        $operation->statut_courant = 'approuvee';
+        $operation->save();
+
+        // Enregistrer le log de statut
+        \App\Models\OperationStatusLog::create([
+            'operation_id' => $operation->id,
+            'from_status' => 'pending_validation',
+            'to_status' => 'approuvee',
+            'user_name' => Auth::user()->name,
+            'user_id' => Auth::user()->id,
+            'commentaire' => 'Opération validée avec succès',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Opération validée avec succès !');
+    }
+
+    /**
+     * Envoyer la notification d'approbation avec services CC
+     */
+    private function sendApprovalNotification($operation, $step, $ccServices = '')
+    {
+        try {
+            // Récupérer le service de l'étape suivante
+            $nextStep = \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('ordre_validation', '>', $step)
+                ->where('statut', 'EN_ATTENTE')
+                ->orderBy('ordre_validation')
+                ->first();
+
+            if ($nextStep) {
+                $service = \DB::table('services_operationnels')
+                    ->where('id', $nextStep->service_id)
+                    ->first();
+
+                if ($service) {
+                    // Préparer les destinataires CC
+                    $ccEmails = [];
+                    if ($ccServices) {
+                        $ccServiceIds = explode(',', $ccServices);
+                        $ccServicesData = \DB::table('services_operationnels')
+                            ->whereIn('id', $ccServiceIds)
+                            ->pluck('email')
+                            ->toArray();
+                        $ccEmails = array_filter($ccServicesData);
+                    }
+
+                    // Envoyer l'email au validateur suivant avec les CC
+                    $url = request()->getSchemeAndHttpHost() . "/operations/{$operation->id}/validate";
+                    $mail = new SendEmail($operation, $url);
+
+                    if (!empty($ccEmails)) {
+                        $mail->cc($ccEmails);
+                    }
+
+                    Mail::to($service->email)->send($mail);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi de l\'email de notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Approuver une opération
+     */
+    public function approveOperation(Request $request, Operation $operation, $step)
+    {
+        $validated = $request->validate([
+            'commentaire' => 'nullable|string|max:500',
+            'cc_services' => 'nullable|string',
+            'circuit_cc_services' => 'nullable|string',
+            'pieces_jointes' => 'nullable|array',
+            'pieces_jointes.*' => 'file|mimes:pdf,xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        $user = Auth::user();
+
+        \DB::transaction(function() use ($operation, $step, $validated, $user, $request) {
+            // Mettre à jour l'étape de validation
+            \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('ordre_validation', $step)
+                ->update([
+                    'statut' => 'approved',
+                    'validated_by' => $user->email,
+                    'validated_at' => now(),
+                    'commentaire' => $validated['commentaire'] ?? null,
+                ]);
+
+            // Gérer les pièces jointes supplémentaires
+            if ($request->hasFile('pieces_jointes')) {
+                foreach ($request->file('pieces_jointes') as $file) {
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('operations/' . $operation->id . '/pieces_jointes', $filename, 'public');
+
+                    \DB::table('fichiers_operations')->insert([
+                        'operation_id' => $operation->id,
+                        'nom_original' => $file->getClientOriginalName(),
+                        'chemin' => $path,
+                        'type_fichier' => $file->getClientOriginalExtension(),
+                        'taille' => $file->getSize(),
+                        'uploaded_by' => $user->email,
+                        'created_at' => now(),
+                    ]);
+                }
+            }
+
+            // Combiner les services CC des deux sources
+            $allCcServices = [];
+            if (!empty($validated['cc_services'])) {
+                $allCcServices[] = $validated['cc_services'];
+            }
+            if (!empty($validated['circuit_cc_services'])) {
+                $allCcServices[] = $validated['circuit_cc_services'];
+            }
+            $combinedCcServices = implode(',', array_filter($allCcServices));
+
+            // Envoyer l'email de notification avec les services CC
+            $this->sendApprovalNotification($operation, $step, $combinedCcServices);
+
+            // Vérifier s'il y a une étape suivante
+            $nextStep = \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('ordre_validation', '>', $step)
+                ->where('statut', 'EN_ATTENTE')
+                ->orderBy('ordre_validation')
+                ->first();
+
+            if ($nextStep) {
+                // Passer à l'étape suivante
+                \DB::table('operation_service_validation')
+                    ->where('id', $nextStep->id)
+                    ->update(['statut' => 'EN_COURS']);
+
+                // Mettre à jour le statut de l'opération
+                $operation->update(['statut_courant' => 'en_validation']);
+
+                // Envoyer l'email au service suivant
+                $nextService = \App\Models\ServiceOperationnel::find($nextStep->service_operationnel_id);
+                if ($nextService && $nextService->email) {
+                    $url = request()->getSchemeAndHttpHost() . "/operations/{$operation->id}/validate";
+                    \Mail::to($nextService->email)->send(new \App\Mail\SendEmail($operation, $url));
+                }
+            } else {
+                // Dernière étape validée, l'opération est approuvée
+                $operation->update(['statut_courant' => 'approuvee']);
+            }
+
+            // Enregistrer dans l'historique
+            \App\Models\OperationStatusLog::create([
+                'operation_id' => $operation->id,
+                'from_status' => 'pending_validation',
+                'to_status' => 'approved',
+                'user_name' => $user->name,
+                'user_id' => $user->id,
+                'commentaire' => $validated['commentaire'] ?? 'Validation approuvée',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()->route('operations.validate', $operation->id)
+            ->with('success', 'Opération approuvée avec succès');
+    }
+
+    /**
+     * Rejeter une opération
+     */
+    public function rejectOperation(Request $request, Operation $operation, $step)
+    {
+        $validated = $request->validate([
+            'commentaire' => 'required|string|max:500',
+        ]);
+
+        $user = Auth::user();
+
+        \DB::transaction(function() use ($operation, $step, $validated, $user) {
+            // Mettre à jour l'étape de validation
+            \DB::table('operation_service_validation')
+                ->where('operation_id', $operation->id)
+                ->where('ordre_validation', $step)
+                ->update([
+                    'statut' => 'rejected',
+                    'validated_by' => $user->email,
+                    'validated_at' => now(),
+                    'commentaire' => $validated['commentaire'],
+                ]);
+
+            // Mettre à jour le statut de l'opération
+            $operation->update(['statut_courant' => 'rejetee']);
+
+            // Enregistrer dans l'historique
+            \App\Models\OperationStatusLog::create([
+                'operation_id' => $operation->id,
+                'from_status' => 'pending_validation',
+                'to_status' => 'rejected',
+                'user_name' => $user->name,
+                'user_id' => $user->id,
+                'commentaire' => $validated['commentaire'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Notifier le demandeur
+            if ($operation->demandeur_email) {
+                \Mail::to($operation->demandeur_email)->send(
+                    new \App\Mail\OperationRejectedMail($operation, $validated['commentaire'])
+                );
+            }
+        });
+
+        return redirect()->route('operations.validate', $operation->id)
+            ->with('success', 'Opération rejetée avec succès');
+    }
+}

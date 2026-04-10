@@ -1,0 +1,36 @@
+/* Styles pour rendre cliquables les cartes du dashboard */
+
+.dashboard-container .card {
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.dashboard-container .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+}
+
+.dashboard-container .card:active {
+    transform: translateY(-3px);
+}
+
+/* Désactiver le curseur pour les éléments cliquables internes */
+.dashboard-container .card a,
+.dashboard-container .card button {
+    cursor: auto;
+}
+
+.dashboard-container .card a:hover,
+.dashboard-container .card button:hover {
+    cursor: pointer;
+}
+
+/* Amélioration des sections individuelles */
+.dashboard-container .card.border-start:hover {
+    border-color: inherit;
+}
+
+/* Ajouter un léger background change au hover */
+.dashboard-container .card:hover {
+    background-color: rgba(0,0,0,0.01);
+}

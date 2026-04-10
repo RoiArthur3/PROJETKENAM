@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KENAM Hikvision PWA</title>
+    <meta name="description" content="Application PWA pour la synchronisation de photos avec caméras Hikvision">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KENAM PWA">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-primary text-white py-3">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">
+                    <i class="fas fa-camera me-2"></i>
+                    KENAM Hikvision PWA
+                </h1>
+                <div class="d-flex align-items-center">
+                    <span id="connection-status" class="badge bg-success me-2">
+                        <i class="fas fa-wifi me-1"></i>
+                        En ligne
+                    </span>
+                    <button id="install-btn" class="btn btn-light btn-sm d-none">
+                        <i class="fas fa-download me-1"></i>
+                        Installer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        <!-- Camera Section -->
+        <section class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-camera me-2"></i>
+                            Prise de Photo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Employee Selection -->
+                        <div class="mb-3">
+                            <label for="employee-select" class="form-label">Sélectionner l'employé <small class="text-muted">(optionnel)</small></label>
+                            <select class="form-select" id="employee-select">
+                                <option value="">Choisir un employé...</option>
+                                <option value="">⏸ Pré-enregistrer sans employé</option>
+                            </select>
+                        </div>
+
+                        <!-- Pre-registration Info -->
+                        <div id="pre-registration-info" class="alert alert-info mb-3" style="display: none;">
+                            <h6><i class="fas fa-info-circle me-2"></i>Pré-enregistrement</h6>
+                            <p class="mb-2">La photo sera enregistrée et pourra être associée à un employé plus tard.</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="temp-name" class="form-label">Nom temporaire</label>
+                                    <input type="text" class="form-control" id="temp-name" placeholder="Ex: Visiteur 001">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="temp-notes" class="form-label">Notes</label>
+                                    <input type="text" class="form-control" id="temp-notes" placeholder="Ex: Livraison, Maintenance...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Preview -->
+                        <div class="mb-3">
+                            <video id="video-preview" class="w-100 rounded" autoplay playsinline style="display: none;"></video>
+                            <canvas id="photo-canvas" style="display: none;"></canvas>
+                            <div id="photo-preview" class="text-center" style="display: none;">
+                                <img id="captured-photo" class="img-fluid rounded" alt="Photo capturée">
+                            </div>
+                        </div>
+
+                        <!-- Camera Controls -->
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button id="start-camera" class="btn btn-primary">
+                                <i class="fas fa-video me-2"></i>
+                                Démarrer la caméra
+                            </button>
+                            <button id="capture-photo" class="btn btn-success" disabled>
+                                <i class="fas fa-camera me-2"></i>
+                                Capturer
+                            </button>
+                            <button id="retake-photo" class="btn btn-warning" style="display: none;">
+                                <i class="fas fa-redo me-2"></i>
+                                Recommencer
+                            </button>
+                            <button id="sync-photo" class="btn btn-info" disabled>
+                                <i class="fas fa-sync me-2"></i>
+                                Synchroniser
+                            </button>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-3 text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                La photo sera synchronisée même sans sélection d'employé (pré-enregistrement)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sync Status -->
+        <section class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sync me-2"></i>
+                            Statut de Synchronisation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <div class="h3 mb-1" id="total-photos">0</div>
+                                    <small class="text-muted">Total photos</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <div class="h3 mb-1" id="synced-photos">0</div>
+                                    <small class="text-muted">Synchronisées</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <div class="h3 mb-1" id="pending-photos">0</div>
+                                    <small class="text-muted">En attente</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="mt-3">
+                            <div class="progress">
+                                <div id="sync-progress" class="progress-bar" role="progressbar" style="width: 0%">
+                                    0%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Photos -->
+        <section class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-images me-2"></i>
+                            Photos Récentes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-photos" class="row">
+                            <!-- Photos will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-info-circle text-primary me-2"></i>
+                <strong class="me-auto">KENAM PWA</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+                Message
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loading-modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <h5 id="loading-message">Traitement en cours...</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

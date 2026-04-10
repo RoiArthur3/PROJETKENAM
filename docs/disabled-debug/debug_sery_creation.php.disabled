@@ -1,0 +1,7 @@
+<?php
+
+// Archived on 2026-03-08.
+// This debug script previously created Operation records directly with a random
+// numero_operation format OP-YYYY-XXXX, bypassing the main business entry point.
+// It is intentionally disabled to keep a single creation path through
+// OperationController -> OperationCreationService.

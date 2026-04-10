@@ -1,0 +1,12 @@
+{
+    "mail": {
+        "mailer": "smtp",
+        "host": "folina.o2switch.net",
+        "port": "465",
+        "encryption": null,
+        "username": "info@kenamservices.net",
+        "password": "Kenam2025@",
+        "from_address": "info@kenamservices.net",
+        "from_name": "KENAM SERVICES"
+    }
+}

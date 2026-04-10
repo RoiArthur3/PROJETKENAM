@@ -1,0 +1,320 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OperationController;
+use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\EmailTestController;
+use App\Http\Controllers\PendingValidationController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ParametrageController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ApprovisionnementCaisseController;
+use App\Http\Controllers\DepenseCaisseController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\RecetteController;
+use App\Http\Controllers\CommercialController;
+use App\Http\Controllers\ComptabiliteController;
+use App\Http\Controllers\TresorerieController;
+use App\Http\Controllers\CaisseController;
+use App\Http\Controllers\RHController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\AdminPermissionController;
+use App\Http\Controllers\ModeratorPermissionController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\FournisseurController;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WarehouseDashboardController;
+use App\Http\Controllers\ParcController;
+use App\Http\Controllers\ParcDashboardController;
+use App\Http\Controllers\VehiculeController;
+use App\Http\Controllers\MagasinController;
+use App\Http\Controllers\VehicleAssignmentController;
+use App\Http\Controllers\VehicleMissionController;
+use App\Http\Controllers\VehicleIncidentController;
+use App\Http\Controllers\ServiceOperationnelController;
+use App\Http\Controllers\TypeOperationController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AnalysesController;
+use App\Http\Controllers\CommandeController;
+use App\Http\Controllers\CommandeFournisseurController;
+use App\Http\Controllers\FactureController;
+use App\Http\Controllers\FactureFournisseurController;
+use App\Http\Controllers\DevisController;
+use App\Http\Controllers\ControleurController;
+use App\Http\Controllers\CentralValidationController;
+use App\Http\Controllers\OperationValidationController;
+use App\Http\Controllers\RoleBasedController;
+use App\Http\Controllers\PlanificationController;
+use App\Http\Controllers\EvaluationFournisseurController;
+use App\Http\Controllers\LivraisonFournisseurController;
+use App\Http\Controllers\DocumentFournisseurController;
+use App\Http\Controllers\ContratFournisseurController;
+use App\Http\Controllers\PaiementFournisseurController;
+use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\AccountingExportController;
+use App\Http\Controllers\EcritureComptableController;
+use App\Http\Controllers\CnssController;
+use App\Http\Controllers\ImpotRevenuController;
+use App\Http\Controllers\EtatFinancierController;
+use App\Http\Controllers\FactureComptableController;
+use App\Http\Controllers\OperationsToEcrituresController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\CongeController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminAgentController;
+use App\Http\Controllers\AgentController;
+use App\Http\Controllers\ServicePersonneRessourceController;
+use App\Http\Controllers\ServiceResponsableController;
+use App\Http\Controllers\AlertController;
+use App\Http\Controllers\ParcAssuranceController;
+use App\Http\Controllers\ParcHistoriqueController;
+use App\Http\Controllers\ReparationController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProduitController;
+use App\Http\Controllers\StockEntreeController;
+use App\Http\Controllers\StockSortieController;
+use App\Http\Controllers\StockTransfertController;
+use App\Http\Controllers\InventaireController;
+use App\Http\Controllers\ProjetsDashboardController;
+use App\Http\Controllers\EntrepotController;
+use App\Http\Controllers\TestEmailController;
+use App\Http\Controllers\RapportsController;
+use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ClassificationController;
+use App\Http\Controllers\ChargeController;
+use App\Http\Controllers\ConformiteController;
+use App\Http\Controllers\ControleAuditController;
+use App\Http\Controllers\DocumentLegauxController;
+use App\Http\Controllers\FacturationController;
+use App\Http\Controllers\CompteController;
+use App\Http\Controllers\EntretienController;
+use App\Http\Controllers\Materiel\MaterielController;
+use App\Http\Controllers\OperationCostController;
+use App\Http\Controllers\OperationRequeteController;
+use App\Http\Controllers\ParametreController;
+use App\Http\Controllers\PneumatiqueController;
+use App\Http\Controllers\ServiceAuthController;
+use App\Http\Controllers\TempAdminController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\UserPermissionTestController;
+use App\Http\Controllers\ValidationController;
+use App\Http\Controllers\WorkflowController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+// Page d'accueil - redirection vers login
+Route::get('/', function () {
+    return redirect('/login');
+})->name('home');
+
+// Routes d'authentification KENAM - CORRIGÉ
+Route::get('/login', [App\Http\Controllers\Auth\AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login'])->name('login.submit');
+Route::get('/phone-login', [App\Http\Controllers\Auth\AuthController::class, 'showLoginForm'])->name('phone.login');
+Route::post('/phone-login', [App\Http\Controllers\Auth\AuthController::class, 'login'])->name('phone.login.submit');
+Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
+
+// Routes protégées
+Route::middleware(['auth'])->group(function () {
+    // Module Paramétrage (routes directes)
+    Route::prefix('parametrage')->name('parametrage.')->group(function () {
+        Route::get('/', [ParametrageController::class, 'index'])->name('index');
+        Route::get('/entreprise', [ParametrageController::class, 'entreprise'])->name('entreprise');
+        Route::post('/entreprise', [ParametrageController::class, 'saveEntreprise'])->name('entreprise.save');
+
+        // Configuration Email
+        Route::get('/email', [ParametrageController::class, 'email'])->name('email');
+        Route::post('/email', [ParametrageController::class, 'saveEmail'])->name('email.save');
+        Route::post('/email/test', [ParametrageController::class, 'testEmail'])->name('email.test');
+
+        // Configuration Générale
+        Route::get('/general', [ParametrageController::class, 'general'])->name('general');
+        Route::post('/general', [ParametrageController::class, 'saveGeneral'])->name('general.save');
+
+        // Configuration Système
+        Route::get('/systeme', [ParametrageController::class, 'systeme'])->name('systeme');
+        Route::post('/systeme', [ParametrageController::class, 'saveSysteme'])->name('systeme.save');
+    });
+
+    // Types d'opérations (routes directes pour compatibilité)
+    Route::prefix('types-operations')->name('types-operations.')->group(function () {
+        Route::get('/', [TypeOperationController::class, 'index'])->name('index');
+        Route::get('/create', [TypeOperationController::class, 'create'])->name('create');
+        Route::post('/', [TypeOperationController::class, 'store'])->name('store');
+        Route::get('/{typeOperation}/edit', [TypeOperationController::class, 'edit'])->name('edit');
+        Route::put('/{typeOperation}', [TypeOperationController::class, 'update'])->name('update');
+        Route::delete('/{typeOperation}', [TypeOperationController::class, 'destroy'])->name('destroy');
+    });
+
+    // Module Settings (compatible avec la sidebar)
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [ParametrageController::class, 'index'])->name('index');
+        Route::get('/company', [ParametrageController::class, 'entreprise'])->name('company.index');
+        Route::post('/company', [ParametrageController::class, 'saveEntreprise'])->name('company.update');
+
+        // Routes pour les utilisateurs (rediriger vers le système existant)
+        Route::get('/users', function() { return redirect()->route('admin.comptes.users.index'); })->name('users.index');
+        Route::get('/users/create', function() { return redirect()->route('admin.comptes.users.create'); })->name('users.create');
+
+        // Route directe pour /admin/users - AJOUTÉE
+        Route::get('/admin/users', function() { return redirect()->route('admin.comptes.users.index'); })->name('admin.users');
+
+        // Routes pour les rôles (rediriger vers le système existant)
+        Route::get('/roles', function() { return redirect()->route('admin.permissions'); })->name('roles.index');
+        Route::get('/roles/create', function() { return redirect()->route('main.permissions.create'); })->name('roles.create');
+    });
+
+    // Operations routes
+    Route::prefix('operations')->name('operations.')->middleware('module:operations')->group(function () {
+        // Tableau de bord principal
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Routes de validation
+        Route::prefix('valider')->name('valider.')->group(function () {
+            Route::get('/', [OperationController::class, 'valider'])->name('index');
+            Route::post('/{id}/validate', [OperationController::class, 'validateOperation'])->name('validate');
+            Route::post('/{id}/approve', [OperationController::class, 'approveOperation'])->name('approve');
+            Route::post('/{id}/reject', [OperationController::class, 'rejectOperation'])->name('reject');
+        });
+
+        // Routes des opérations validées
+        Route::prefix('validated')->name('validated.')->group(function () {
+            Route::get('/', [OperationController::class, 'validated'])->name('index');
+            Route::get('/{id}', [OperationController::class, 'showValidated'])->name('show');
+        });
+
+    // Routes des validations
+        Route::prefix('validations')->name('validations.')->group(function () {
+            Route::get('/', [ValidationController::class, 'index'])->name('index');
+            Route::get('/pending', [ValidationController::class, 'pending'])->name('pending');
+            Route::get('/approved', [ValidationController::class, 'approved'])->name('approved');
+            Route::get('/rejected', [ValidationController::class, 'rejected'])->name('rejected');
+            Route::get('/{id}', [ValidationController::class, 'show'])->name('show');
+        });
+
+        Route::get('/', [OperationController::class, 'index'])->name('index');
+        Route::get('/create', [OperationController::class, 'create'])->name('create');
+        Route::post('/', [OperationController::class, 'store'])->name('store');
+        Route::get('/{operation}', [OperationController::class, 'show'])->name('show');
+        Route::get('/{operation}/edit', [OperationController::class, 'edit'])->name('edit');
+        Route::put('/{operation}', [OperationController::class, 'update'])->name('update');
+        Route::delete('/{operation}', [OperationController::class, 'destroy'])->name('destroy');
+        Route::match(['get', 'post'], '/{operation}/validate', [OperationController::class, 'validateOperation'])->name('validate');
+        Route::get('/history', [OperationController::class, 'validationHistory'])->name('history');
+
+        // Routes d'exécution
+        Route::get('/{operation}/execution', [OperationController::class, 'execution'])->name('operations.execution');
+        Route::get('/{operation}/controle', [OperationController::class, 'controle'])->name('operations.controle');
+        Route::get('/{operation}/couts', [OperationController::class, 'couts'])->name('operations.couts');
+    });
+
+    // Routes de validation
+    Route::prefix('validations')->name('validations.')->group(function () {
+        Route::get('/pending', [OperationController::class, 'pendingValidation'])->name('pending');
+        Route::get('/approved', [OperationController::class, 'approvedValidation'])->name('approved');
+        Route::get('/rejected', [OperationController::class, 'rejectedValidation'])->name('rejected');
+        Route::get('/history', [OperationController::class, 'validationHistory'])->name('history');
+    });
+
+    // Admin permissions
+    Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+        // Users (Gestion professionnelle centralisée)
+        Route::resource('users', CompteController::class)
+            ->parameters(['users' => 'user']);
+
+        // Compatibilité avec les anciennes routes pointant vers updateUser/storeUser
+        Route::post('/users/store', [CompteController::class, 'store'])->name('admin.users.store.compat');
+        Route::put('/users/{user}/update', [CompteController::class, 'updateUser'])->name('admin.users.update.compat');
+
+        // Comptes
+        Route::prefix('comptes')->name('comptes.')->group(function() {
+            Route::get('/', [CompteController::class, 'index'])->name('index');
+            Route::get('/create', [CompteController::class, 'create'])->name('create');
+            Route::post('/', [CompteController::class, 'store'])->name('store');
+
+            // Users dans les comptes
+            Route::prefix('users')->name('users.')->group(function() {
+                Route::get('/', [CompteController::class, 'index'])->name('index');
+                Route::get('/create', [CompteController::class, 'create'])->name('create');
+                Route::post('/', [CompteController::class, 'storeUser'])->name('store');
+                Route::get('/{user}', [CompteController::class, 'edit'])->name('edit');
+                Route::put('/{user}', [CompteController::class, 'updateUser'])->name('update');
+        });
+    });
+});
+
+    // Routes du// Routes Magasin (alias pour compatibilité avec sidebar)
+    Route::prefix('magasin')->name('magasin.')->middleware(['web', 'auth'])->group(function () {
+        Route::get('/', [MagasinController::class, 'index'])->name('index');
+        Route::get('/dashboard', [MagasinController::class, 'dashboard'])->name('dashboard');
+        Route::get('/inventaire', [MagasinController::class, 'inventaire'])->name('inventaire');
+        Route::get('/entrees', [MagasinController::class, 'entrees'])->name('entrees');
+        Route::get('/entrees/create', [MagasinController::class, 'createEntree'])->name('entrees.create');
+        Route::post('/entrees', [MagasinController::class, 'storeEntree'])->name('entrees.store');
+        Route::get('/sorties', [MagasinController::class, 'sorties'])->name('sorties');
+        Route::get('/sorties/create', [MagasinController::class, 'createSortie'])->name('sorties.create');
+        Route::post('/sorties', [MagasinController::class, 'storeSortie'])->name('sorties.store');
+        Route::get('/rapports', [MagasinController::class, 'rapports'])->name('rapports');
+    });
+
+    // Dashboard principal (fix pour la redirection après login)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Modules complémentaires
+    require __DIR__.'/web-materiel.php';
+    require __DIR__.'/web-fleet.php';
+    require __DIR__.'/web-entrepots.php';
+    require __DIR__.'/web-projects.php';
+    require __DIR__.'/web-services.php';
+    require __DIR__.'/tresorerie.php';
+    require __DIR__.'/web-comptabilite.php';
+    require __DIR__.'/web-rh.php';
+    require __DIR__.'/web-commercial.php';
+    require __DIR__.'/web-magasin.php';
+    require __DIR__.'/web-fournisseurs.php';
+    require __DIR__.'/web-audit.php';
+    require __DIR__.'/web-analyses.php';
+    require __DIR__.'/web-reporting.php';
+    require __DIR__.'/web-settings.php';
+    require __DIR__.'/web-operations.php';
+
+    // Inclure les routes de validation (solution définitive)
+    require __DIR__.'/web-validation-corrected.php';
+
+    // Routes de développement local
+    if (app()->environment('local')) {
+        Route::get('/dev-info', function () {
+            return 'Mode développement - KENAM Services';
+        });
+
+        Route::get('/test-email', function () {
+            try {
+                \Mail::raw('Ceci est un email de test pour vérifier la configuration SMTP.', function ($message) {
+                    $message->to('admin@kenamservices.com') // Remplacez par votre email réel pour tester
+                            ->subject('Test Email KENAM Services');
+                });
+                return 'Email envoyé avec succès ! Vérifiez votre boîte de réception (et spams).';
+            } catch (\Exception $e) {
+                return 'Erreur lors de l\'envoi : ' . $e->getMessage();
+            }
+        });
+    }
+});

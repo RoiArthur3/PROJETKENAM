@@ -1,0 +1,692 @@
+/* ============================================
+   KENAM SERVICES - BRANDING CSS
+   Version: 1.0.0
+   ============================================ */
+
+/* ============================================
+   1. VARIABLES CSS - PALETTE OFFICIELLE
+   ============================================ */
+
+:root {
+    /* Vert Principal KENAM */
+    --kenam-green: #28a745;
+    --kenam-green-light: #20c997;
+    --kenam-green-dark: #1e7e34;
+    --kenam-green-bg: rgba(40, 167, 69, 0.1);
+    --kenam-green-hover: #218838;
+
+    /* Bleu Secondaire */
+    --kenam-blue: #007bff;
+    --kenam-blue-light: #5a9fd4;
+    --kenam-blue-dark: #0056b3;
+    --kenam-blue-bg: rgba(0, 123, 255, 0.1);
+    --kenam-blue-hover: #0056b3;
+
+    /* Orange Accent */
+    --kenam-orange: #fd7e14;
+    --kenam-orange-light: #ff922b;
+    --kenam-orange-dark: #e8590c;
+    --kenam-orange-bg: rgba(253, 126, 20, 0.1);
+    --kenam-orange-hover: #e8590c;
+
+    /* Rouge Urgent */
+    --kenam-red: #dc3545;
+    --kenam-red-light: #f1aeb5;
+    --kenam-red-dark: #c82333;
+    --kenam-red-bg: rgba(220, 53, 69, 0.1);
+    --kenam-red-hover: #c82333;
+
+    /* Jaune Attention */
+    --kenam-yellow: #ffc107;
+    --kenam-yellow-light: #ffca2c;
+    --kenam-yellow-dark: #e0a800;
+    --kenam-yellow-bg: rgba(255, 193, 7, 0.1);
+    --kenam-yellow-hover: #e0a800;
+
+    /* Gris Neutres */
+    --kenam-white: #ffffff;
+    --kenam-gray-50: #f8f9fa;
+    --kenam-gray-100: #e9ecef;
+    --kenam-gray-200: #dee2e6;
+    --kenam-gray-300: #ced4da;
+    --kenam-gray-400: #adb5bd;
+    --kenam-gray-500: #6c757d;
+    --kenam-gray-600: #495057;
+    --kenam-gray-700: #343a40;
+    --kenam-gray-800: #212529;
+    --kenam-gray-900: #000000;
+
+    /* Typographie */
+    --font-primary: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --font-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+    --font-accent: 'Figtree', sans-serif;
+
+    /* Échelle Typographique Desktop */
+    --text-xs: 0.75rem;    /* 12px */
+    --text-sm: 0.875rem;   /* 14px */
+    --text-base: 1rem;      /* 16px */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px */
+    --text-3xl: 1.875rem;   /* 30px */
+    --text-4xl: 2.25rem;    /* 36px */
+    --text-5xl: 3rem;       /* 48px */
+
+    /* Poids des Polices */
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+
+    /* Espacements */
+    --spacing-xs: 0.25rem;  /* 4px */
+    --spacing-sm: 0.5rem;   /* 8px */
+    --spacing-md: 1rem;     /* 16px */
+    --spacing-lg: 1.5rem;   /* 24px */
+    --spacing-xl: 2rem;     /* 32px */
+    --spacing-2xl: 3rem;    /* 48px */
+
+    /* Bordures */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+    --border-radius-full: 50%;
+
+    /* Ombres */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+    /* Transitions */
+    --transition-fast: all 0.2s ease;
+    --transition-smooth: all 0.3s ease;
+    --transition-slow: all 0.5s ease;
+
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+}
+
+/* ============================================
+   2. TYPOGRAPHIE RESPONSIVE
+   ============================================ */
+
+/* Mobile - Échelle réduite */
+@media (max-width: 768px) {
+    :root {
+        --text-xs: 0.6875rem;  /* 11px */
+        --text-sm: 0.8125rem;  /* 13px */
+        --text-base: 0.875rem; /* 14px */
+        --text-lg: 1rem;       /* 16px */
+        --text-xl: 1.125rem;   /* 18px */
+        --text-2xl: 1.25rem;   /* 20px */
+        --text-3xl: 1.5rem;    /* 24px */
+        --text-4xl: 1.75rem;    /* 28px */
+        --text-5xl: 2.25rem;    /* 36px */
+    }
+}
+
+/* ============================================
+   3. UTILITAIRES DE COULEURS
+   ============================================ */
+
+/* Text Colors */
+.text-kenam-green { color: var(--kenam-green) !important; }
+.text-kenam-blue { color: var(--kenam-blue) !important; }
+.text-kenam-orange { color: var(--kenam-orange) !important; }
+.text-kenam-red { color: var(--kenam-red) !important; }
+.text-kenam-yellow { color: var(--kenam-yellow) !important; }
+
+/* Background Colors */
+.bg-kenam-green { background-color: var(--kenam-green) !important; }
+.bg-kenam-blue { background-color: var(--kenam-blue) !important; }
+.bg-kenam-orange { background-color: var(--kenam-orange) !important; }
+.bg-kenam-red { background-color: var(--kenam-red) !important; }
+.bg-kenam-yellow { background-color: var(--kenam-yellow) !important; }
+
+/* Background Subtles */
+.bg-kenam-green-subtle { background-color: var(--kenam-green-bg) !important; }
+.bg-kenam-blue-subtle { background-color: var(--kenam-blue-bg) !important; }
+.bg-kenam-orange-subtle { background-color: var(--kenam-orange-bg) !important; }
+.bg-kenam-red-subtle { background-color: var(--kenam-red-bg) !important; }
+.bg-kenam-yellow-subtle { background-color: var(--kenam-yellow-bg) !important; }
+
+/* ============================================
+   4. COMPOSANTS KENAM
+   ============================================ */
+
+/* Bouton Primaire KENAM */
+.btn-kenam-primary {
+    background: linear-gradient(135deg, var(--kenam-green) 0%, var(--kenam-green-light) 100%);
+    color: var(--kenam-white);
+    border: none;
+    border-radius: var(--border-radius-md);
+    padding: 12px 24px;
+    font-family: var(--font-primary);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-base);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-height: 44px;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-kenam-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--kenam-green-hover) 0%, var(--kenam-green) 100%);
+}
+
+.btn-kenam-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Bouton Secondaire KENAM */
+.btn-kenam-secondary {
+    background: var(--kenam-blue);
+    color: var(--kenam-white);
+    border: none;
+    border-radius: var(--border-radius-md);
+    padding: 12px 24px;
+    font-family: var(--font-primary);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-base);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-height: 44px;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-kenam-secondary:hover {
+    background: var(--kenam-blue-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Bouton Outline KENAM */
+.btn-kenam-outline {
+    background: transparent;
+    color: var(--kenam-green);
+    border: 2px solid var(--kenam-green);
+    border-radius: var(--border-radius-md);
+    padding: 10px 22px;
+    font-family: var(--font-primary);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-base);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-height: 44px;
+}
+
+.btn-kenam-outline:hover {
+    background: var(--kenam-green);
+    color: var(--kenam-white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   5. CARDS KENAM
+   ============================================ */
+
+.card-kenam {
+    background: var(--kenam-white);
+    border: 1px solid var(--kenam-gray-200);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-smooth);
+    overflow: hidden;
+}
+
+.card-kenam:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-kenam-header {
+    background: linear-gradient(135deg, var(--kenam-gray-50) 0%, var(--kenam-gray-100) 100%);
+    border-bottom: 2px solid var(--kenam-green);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-family: var(--font-primary);
+    font-weight: var(--font-semibold);
+    color: var(--kenam-gray-700);
+    font-size: var(--text-lg);
+}
+
+.card-kenam-body {
+    padding: var(--spacing-xl);
+    font-family: var(--font-body);
+    color: var(--kenam-gray-600);
+    line-height: 1.6;
+}
+
+.card-kenam-footer {
+    background: var(--kenam-gray-50);
+    border-top: 1px solid var(--kenam-gray-200);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--text-sm);
+    color: var(--kenam-gray-500);
+}
+
+/* ============================================
+   6. BADGES KENAM
+   ============================================ */
+
+.badge-kenam {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: var(--font-primary);
+    font-weight: var(--font-bold);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+}
+
+.badge-kenam-success {
+    background: linear-gradient(135deg, var(--kenam-green), var(--kenam-green-light));
+    color: var(--kenam-white);
+}
+
+.badge-kenam-warning {
+    background: linear-gradient(135deg, var(--kenam-yellow), var(--kenam-yellow-dark));
+    color: var(--kenam-gray-800);
+}
+
+.badge-kenam-danger {
+    background: linear-gradient(135deg, var(--kenam-red), var(--kenam-red-dark));
+    color: var(--kenam-white);
+}
+
+.badge-kenam-info {
+    background: linear-gradient(135deg, var(--kenam-blue), var(--kenam-blue-dark));
+    color: var(--kenam-white);
+}
+
+.badge-kenam-orange {
+    background: linear-gradient(135deg, var(--kenam-orange), var(--kenam-orange-dark));
+    color: var(--kenam-white);
+}
+
+/* ============================================
+   7. ALERTES KENAM
+   ============================================ */
+
+.alert-kenam {
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.alert-kenam-success {
+    background-color: var(--kenam-green-bg);
+    border-color: var(--kenam-green);
+    color: var(--kenam-green-dark);
+}
+
+.alert-kenam-warning {
+    background-color: var(--kenam-yellow-bg);
+    border-color: var(--kenam-yellow);
+    color: var(--kenam-yellow-dark);
+}
+
+.alert-kenam-danger {
+    background-color: var(--kenam-red-bg);
+    border-color: var(--kenam-red);
+    color: var(--kenam-red-dark);
+}
+
+.alert-kenam-info {
+    background-color: var(--kenam-blue-bg);
+    border-color: var(--kenam-blue);
+    color: var(--kenam-blue-dark);
+}
+
+/* ============================================
+   8. NAVIGATION KENAM
+   ============================================ */
+
+/* Header Principal */
+.navbar-kenam {
+    background: linear-gradient(135deg, var(--kenam-gray-800) 0%, var(--kenam-gray-700) 100%);
+    height: 64px;
+    padding: 0 var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+    border-bottom: 1px solid var(--kenam-gray-600);
+}
+
+.navbar-kenam-brand {
+    color: var(--kenam-white);
+    font-family: var(--font-primary);
+    font-weight: var(--font-bold);
+    font-size: var(--text-xl);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.navbar-kenam-brand:hover {
+    color: var(--kenam-green-light);
+}
+
+/* Sidebar KENAM */
+.sidebar-kenam {
+    background: linear-gradient(180deg, var(--kenam-gray-50) 0%, var(--kenam-gray-100) 100%);
+    border-right: 2px solid var(--kenam-green);
+    width: 280px;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-smooth);
+}
+
+.sidebar-kenam-logo {
+    max-height: 60px;
+    transition: var(--transition-smooth);
+}
+
+.sidebar-kenam-link {
+    color: var(--kenam-gray-700);
+    text-decoration: none;
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    transition: var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+
+.sidebar-kenam-link:hover {
+    background-color: var(--kenam-green-bg);
+    color: var(--kenam-green);
+    border-left-color: var(--kenam-green);
+}
+
+.sidebar-kenam-link.active {
+    background-color: var(--kenam-green-bg);
+    color: var(--kenam-green);
+    border-left-color: var(--kenam-green);
+    font-weight: var(--font-semibold);
+}
+
+/* ============================================
+   9. FORMULAIRES KENAM
+   ============================================ */
+
+.form-control-kenam {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    border: 2px solid var(--kenam-gray-300);
+    border-radius: var(--border-radius-md);
+    background-color: var(--kenam-white);
+    transition: var(--transition-fast);
+    min-height: 44px;
+}
+
+.form-control-kenam:focus {
+    border-color: var(--kenam-green);
+    box-shadow: 0 0 0 3px var(--kenam-green-bg);
+    outline: none;
+}
+
+.form-control-kenam::placeholder {
+    color: var(--kenam-gray-400);
+}
+
+.form-label-kenam {
+    font-family: var(--font-primary);
+    font-weight: var(--font-medium);
+    font-size: var(--text-sm);
+    color: var(--kenam-gray-700);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+}
+
+/* ============================================
+   10. TABLES KENAM
+   ============================================ */
+
+.table-kenam {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--kenam-white);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.table-kenam th {
+    background: linear-gradient(135deg, var(--kenam-gray-50) 0%, var(--kenam-gray-100) 100%);
+    color: var(--kenam-gray-700);
+    font-family: var(--font-primary);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-align: left;
+    border-bottom: 2px solid var(--kenam-green);
+}
+
+.table-kenam td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--kenam-gray-200);
+    color: var(--kenam-gray-600);
+    font-size: var(--text-sm);
+}
+
+.table-kenam tbody tr:hover {
+    background-color: var(--kenam-gray-50);
+}
+
+/* ============================================
+   11. COULEURS PAR MODULE
+   ============================================ */
+
+.module-dashboard { color: var(--kenam-green) !important; }
+.module-operations { color: var(--kenam-blue) !important; }
+.module-parc { color: #6f42c1 !important; }
+.module-stock { color: var(--kenam-orange) !important; }
+.module-rh { color: var(--kenam-red) !important; }
+.module-commercial { color: var(--kenam-yellow) !important; }
+.module-compta { color: #17a2b8 !important; }
+.module-validation { color: #e83e8c !important; }
+
+.bg-module-dashboard { background-color: var(--kenam-green) !important; }
+.bg-module-operations { background-color: var(--kenam-blue) !important; }
+.bg-module-parc { background-color: #6f42c1 !important; }
+.bg-module-stock { background-color: var(--kenam-orange) !important; }
+.bg-module-rh { background-color: var(--kenam-red) !important; }
+.bg-module-commercial { background-color: var(--kenam-yellow) !important; }
+.bg-module-compta { background-color: #17a2b8 !important; }
+.bg-module-validation { background-color: #e83e8c !important; }
+
+/* ============================================
+   12. UTILITAIRES D'ANIMATION
+   ============================================ */
+
+.hover-lift {
+    transition: var(--transition-smooth);
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-scale {
+    transition: var(--transition-fast);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.hover-glow {
+    transition: var(--transition-smooth);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px var(--kenam-green-bg);
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   13. RESPONSIVE MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .btn-kenam-primary,
+    .btn-kenam-secondary,
+    .btn-kenam-outline {
+        padding: 10px 20px;
+        font-size: var(--text-sm);
+        min-height: 44px;
+    }
+
+    .card-kenam-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--text-base);
+    }
+
+    .card-kenam-body {
+        padding: var(--spacing-lg);
+        font-size: var(--text-sm);
+    }
+
+    .form-control-kenam {
+        padding: 10px 12px;
+        font-size: var(--text-sm);
+        min-height: 44px;
+    }
+
+    .table-kenam th,
+    .table-kenam td {
+        padding: var(--spacing-sm);
+        font-size: var(--text-xs);
+    }
+}
+
+/* ============================================
+   14. ACCESSIBILITÉ WCAG
+   ============================================ */
+
+/* Focus visible pour accessibilité */
+.btn-kenam-primary:focus,
+.btn-kenam-secondary:focus,
+.btn-kenam-outline:focus,
+.form-control-kenam:focus {
+    outline: 2px solid var(--kenam-green);
+    outline-offset: 2px;
+}
+
+/* Contraste minimum WCAG AA */
+.text-high-contrast {
+    color: var(--kenam-gray-900) !important;
+}
+
+.bg-high-contrast {
+    background-color: var(--kenam-white) !important;
+}
+
+/* ============================================
+   15. DARK MODE SUPPORT (FUTUR)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    .card-kenam {
+        background: var(--kenam-gray-800);
+        border-color: var(--kenam-gray-600);
+        color: var(--kenam-gray-200);
+    }
+
+    .form-control-kenam {
+        background-color: var(--kenam-gray-700);
+        border-color: var(--kenam-gray-600);
+        color: var(--kenam-gray-200);
+    }
+
+    .table-kenam {
+        background: var(--kenam-gray-800);
+        color: var(--kenam-gray-200);
+    }
+}
+
+/* ============================================
+   16. IMPRESSION
+   ============================================ */
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .card-kenam {
+        box-shadow: none;
+        border: 1px solid var(--kenam-gray-300);
+        break-inside: avoid;
+    }
+
+    .btn-kenam-primary,
+    .btn-kenam-secondary {
+        background: var(--kenam-white) !important;
+        color: var(--kenam-gray-900) !important;
+        border: 1px solid var(--kenam-gray-300);
+    }
+}

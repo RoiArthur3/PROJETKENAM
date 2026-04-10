@@ -1,0 +1,35 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        if (Schema::hasTable('notifications')) {
+            return;
+        }
+
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('parcel_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('type'); // sms, email, push
+            $table->string('event'); // parcel_declared, parcel_received, parcel_shipped, etc.
+            $table->string('title');
+            $table->text('message');
+            $table->string('recipient')->nullable(); // phone number or email
+            $table->string('status')->default('pending'); // pending, sent, failed
+            $table->text('error_message')->nullable();
+            $table->timestamp('sent_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('notifications');
+    }
+};

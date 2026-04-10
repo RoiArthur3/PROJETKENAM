@@ -1,0 +1,479 @@
+@extends('layouts.app')
+
+@section('title', 'Créer une Requête d\'Opération - KENAM SERVICES')
+
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        padding: 0.25rem 0.5rem;
+        min-height: 38px;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #e5e7eb;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        padding: 0 0.5rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        margin-right: 5px;
+        color: #6b7280;
+    }
+    .form-label.required:after {
+        content: " *";
+        color: #dc3545;
+    }
+    .file-preview {
+        margin-top: 10px;
+    }
+    .file-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        padding: 5px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    .file-item button {
+        margin-left: 10px;
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="container-fluid">
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Nouvelle Requête d'Opération
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ route('admin.types-operations.index') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-cog me-1"></i> Gérer les types
+                        </a>
+                        <span class="badge bg-secondary">Brouillon</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="fas fa-times-circle me-2"></i>
+                            <strong>Une erreur est survenue :</strong><br>
+                            {{ session('error') }}
+
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    <form id="operationForm" method="POST" action="{{ route('operations.store') }}" enctype="multipart/form-data">
+                        @csrf
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">Informations générales</h5>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="titre" class="form-label required">Titre de l'opération <span style="color:red">*</span></label>
+                                <input type="text" name="titre" class="form-control @error('titre') is-invalid @enderror"
+                                       id="titre" value="{{ old('titre') }}" required>
+                                @error('titre')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Donnez un titre clair et concis à votre opération</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="priorite" class="form-label required">Priorité <span style="color:red">*</span></label>
+                                <select class="form-select @error('priorite') is-invalid @enderror" name="priorite" id="priorite" required>
+                                    <option value="basse" {{ old('priorite') == 'basse' ? 'selected' : '' }}>Basse</option>
+                                    <option value="moyenne" {{ old('priorite', 'moyenne') == 'moyenne' ? 'selected' : '' }}>Moyenne</option>
+                                    <option value="haute" {{ old('priorite') == 'haute' ? 'selected' : '' }}>Haute</option>
+                                    <option value="urgente" {{ old('priorite') == 'urgente' ? 'selected' : '' }}>Urgente</option>
+                                </select>
+                                @error('priorite')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label required">Services de validation <span style="color:red">*</span></label>
+                                <small class="text-muted">Sélectionnez tous les services qui doivent valider cette requête (dans l'ordre de validation)</small>
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <small class="text-muted">Ajoutez les services validateurs dans l'ordre de validation souhaité</small>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="addValidationService()">
+                                            <i class="fas fa-plus me-1"></i>Ajouter un service
+                                        </button>
+                                    </div>
+                                    <div id="validationServicesList"></div>
+                                    <input type="hidden" name="services_validation" id="services_validation" value="">
+                                </div>
+                                @if(($services ?? collect())->isEmpty())
+                                    <div class="alert alert-warning mt-2 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Aucun service opérationnel trouvé. Créez-en au préalable dans les paramètres.
+                                        </div>
+                                        <a href="{{ route('admin.services.create') }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-plus me-1"></i> Nouveau service
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="form-text">
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        {{ count($services) }} service(s) opérationnel(s) disponible(s) pour la validation
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="type_operation_id" class="form-label required">Type d'opération <span style="color:red">*</span></label>
+                                <select class="form-select @error('type_operation_id') is-invalid @enderror" name="type_operation_id" id="type_operation_id" required>
+                                    <option value="">-- Sélectionner un type --</option>
+                                    @foreach(($types ?? []) as $type)
+                                        <option value="{{ $type->id }}" {{ old('type_operation_id') == $type->id ? 'selected' : '' }}>
+                                            {{ $type->libelle }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('type_operation_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                @if(($types ?? collect())->isEmpty())
+                                    <div class="alert alert-warning mt-2 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Aucun type d'opération actif trouvé. Créez-en au préalable dans les paramètres.
+                                        </div>
+                                        <a href="{{ route('admin.types-operations.create') }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-plus me-1"></i> Nouveau type
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="form-text">Les types sont chargés automatiquement depuis Paramétrage → Types d'opérations</div>
+                                @endif
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="echeance" class="form-label">Date d'échéance <span style="color:red">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                                    <input type="date" name="echeance" class="form-control @error('echeance') is-invalid @enderror"
+                                           id="echeance" value="{{ old('echeance') }}" min="{{ now()->format('Y-m-d') }}">
+                                </div>
+                                @error('echeance')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="montant" class="form-label required">Montant (FCFA) <span style="color:red">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
+                                    <input type="number" name="montant" class="form-control @error('montant') is-invalid @enderror"
+                                           id="montant" value="{{ old('montant') }}" required min="0" step="1">
+                                </div>
+                                @error('montant')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Entrez le montant en Francs CFA</div>
+
+                                <!-- Alerte pour montant élevé -->
+                                <div id="highAmountAlert" class="alert alert-warning mt-2" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Attention :</strong> Pour tout montant supérieur à 99 999 FCFA,
+                                    une notification sera envoyée à <strong>dg@kenamservices.net</strong>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label for="description" class="form-label">Description détaillée <span style="color:red">*</span></label>
+                                <textarea class="form-control @error('description') is-invalid @enderror"
+                                          name="description" id="description" rows="4"
+                                          placeholder="Décrivez l'opération en détail...">{{ old('description') }}</textarea>
+                                @error('description')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">Pièces jointes</h5>
+                                <p class="text-muted mb-3">Ajoutez tous les documents nécessaires pour cette requête</p>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label for="fichiers" class="form-label">Fichiers associés</label>
+                                <input type="file" class="form-control @error('fichiers') is-invalid @enderror"
+                                       id="fichiers" name="fichiers[]" multiple
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                @error('fichiers')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Taille maximale : 10 Mo par fichier. Formats acceptés : PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
+
+                                <div id="filePreview" class="file-preview mt-2">
+                                    <!-- Les aperçus des fichiers seront ajoutés ici -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                            <div class="text-start">
+                                <a href="{{ route('operations.index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                                </a>
+                            </div>
+
+                            <div class="text-center">
+                                <!-- Affichage du coût en temps réel -->
+                                <div id="costDisplay" class="mb-2 p-2 bg-info bg-opacity-10 border border-info rounded" style="display: none;">
+                                    <i class="fas fa-calculator me-2"></i>
+                                    <span class="fw-semibold">Cette requête coûtera :</span>
+                                    <span id="costAmount" class="fw-bold text-primary">0</span> FCFA
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" name="draft" value="1" class="btn btn-outline-primary me-2">
+                                    <i class="far fa-save me-2"></i>Enregistrer comme brouillon
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Soumettre pour validation
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+    let availableServices = @json($services ?? []);
+
+    function addValidationService() {
+        const serviceId = 'validation_service_' + Date.now();
+        const serviceHtml = `
+            <div id="${serviceId}" class="d-flex align-items-center mb-2 p-2 bg-white rounded border">
+                <select class="form-select form-select-sm me-2" onchange="updateValidationServices()">
+                    <option value="">Choisir un service...</option>
+                    ${availableServices.map(service =>
+                        `<option value="${service.id}">${service.nom}</option>`
+                    ).join('')}
+                </select>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeValidationService('${serviceId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`;
+
+        document.getElementById('validationServicesList').insertAdjacentHTML('beforeend', serviceHtml);
+        updateValidationServices();
+    }
+
+    function removeValidationService(serviceId) {
+        document.getElementById(serviceId).remove();
+        updateValidationServices();
+    }
+
+    function updateValidationServices() {
+        const selects = document.querySelectorAll('#validationServicesList select');
+        const services = Array.from(selects)
+            .map(select => select.value)
+            .filter(value => value !== '');
+
+        document.getElementById('services_validation').value = services.join(',');
+    }
+
+    // Validation automatique du formulaire avant soumission
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('operationForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const servicesValidation = document.getElementById('services_validation').value;
+
+                if (!servicesValidation || servicesValidation.trim() === '') {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner au moins un service de validation.');
+                    return false;
+                }
+
+                return true;
+            });
+        }
+    });
+
+    // Initialiser Sortable pour le réordonnancement
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('validationServicesList');
+        if (container) {
+            new Sortable(container, {
+                animation: 150,
+                ghostClass: 'sortable-ghost'
+            });
+        }
+    });
+</script>
+@endpush
+
+    }
+
+    function updateValidationServices() {
+        const selects = document.querySelectorAll('#validationServicesList select');
+        const selectedServices = [];
+
+        selects.forEach(select => {
+            if (select.value) {
+                selectedServices.push(select.value);
+            }
+        });
+
+        document.getElementById('services_validation').value = selectedServices.join(',');
+    }
+
+    // Ajouter un premier service automatiquement si des services sont disponibles
+    document.addEventListener('DOMContentLoaded', function() {
+        if (availableServices && availableServices.length > 0) {
+            addValidationService();
+        }
+    });
+
+    // Gestion des aperçus de fichiers
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('fichiers');
+        if (fileInput) {
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+    });
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        const preview = document.getElementById('filePreview');
+
+        // Vider les aperçus existants
+        preview.innerHTML = '';
+
+        if (files.length > 0) {
+            Array.from(files).forEach((file, index) => {
+                const fileItem = createFileItem(file, index);
+                preview.appendChild(fileItem);
+            });
+        }
+    }
+
+    function createFileItem(file, index) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item mb-2 p-2 border rounded';
+
+        const fileIcon = getFileIcon(file.name);
+        const fileSize = formatFileSize(file.size);
+
+        fileItem.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="${fileIcon} fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">${file.name}</div>
+                    <small class="text-muted">${fileSize}</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        return fileItem;
+    }
+
+    function getFileIcon(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': 'fas fa-file-pdf',
+            'doc': 'fas fa-file-word',
+            'docx': 'fas fa-file-word',
+            'xls': 'fas fa-file-excel',
+            'xlsx': 'fas fa-file-excel',
+            'jpg': 'fas fa-file-image',
+            'jpeg': 'fas fa-file-image',
+            'png': 'fas fa-file-image'
+        };
+
+        return iconMap[extension] || 'fas fa-file';
+    }
+</script>
+
+    function updateValidationServices() {
+        const selects = document.querySelectorAll('#validationServicesList select');
+        const selectedServices = [];
+
+        selects.forEach(select => {
+            if (select.value) {
+                selectedServices.push(select.value);
+            }
+        });
+
+        document.getElementById('services_validation').value = selectedServices.join(',');
+    }
+
+    // Ajouter un premier service automatiquement si des services sont disponibles
+    document.addEventListener('DOMContentLoaded', function() {
+        if (availableServices && availableServices.length > 0) {
+            addValidationService();
+        }
+    });
+
+    // Gestion des aper�us de fichiers
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('fichiers');
+        if (fileInput) {
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+    });
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        const preview = document.getElementById('filePreview');
+        // Code pour g�rer l'aper�u des fichiers
+    }
+</script>
+@endpush
+
+@push('styles')
+<style>
+.service-item {
+    transition: all 0.3s ease;
+}
+.service-item:hover {
+    cursor: grabbing;
+}
+.sortable-services {
+    min-height: 50px;
+}
+</style>
+< / s t y l e > 
+ @ e n d p u s h  
+ 

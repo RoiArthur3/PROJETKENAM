@@ -1,0 +1,62 @@
+{
+  "_index-C0Zqfgkc.js": {
+    "file": "assets/index-C0Zqfgkc.js",
+    "name": "index"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-Cukoc4xC.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-Bkz6qkW4.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_index-C0Zqfgkc.js"
+    ]
+  },
+  "resources/js/mobile/main.js": {
+    "file": "assets/main-rsN7HyvF.js",
+    "name": "main",
+    "src": "resources/js/mobile/main.js",
+    "isEntry": true,
+    "imports": [
+      "_index-C0Zqfgkc.js"
+    ],
+    "dynamicImports": [
+      "resources/js/mobile/views/OperationsList.vue",
+      "resources/js/mobile/views/CreateOperation.vue"
+    ],
+    "css": [
+      "assets/main-DElpqJ6M.css"
+    ]
+  },
+  "resources/js/mobile/views/CreateOperation.vue": {
+    "file": "assets/CreateOperation-Bx_71x0E.js",
+    "name": "CreateOperation",
+    "src": "resources/js/mobile/views/CreateOperation.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/mobile/main.js",
+      "_index-C0Zqfgkc.js"
+    ],
+    "css": [
+      "assets/CreateOperation-CEyv7ndY.css"
+    ]
+  },
+  "resources/js/mobile/views/OperationsList.vue": {
+    "file": "assets/OperationsList-BkpW7Ma3.js",
+    "name": "OperationsList",
+    "src": "resources/js/mobile/views/OperationsList.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/mobile/main.js",
+      "_index-C0Zqfgkc.js"
+    ],
+    "css": [
+      "assets/OperationsList-Dhf-08yI.css"
+    ]
+  }
+}

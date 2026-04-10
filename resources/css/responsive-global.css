@@ -1,0 +1,520 @@
+/* ============================================
+   KENAM SERVICES - RESPONSIVE GLOBAL
+   ============================================ */
+
+/* ============================================
+   1. CONFIGURATION VIEWPORT & BASE
+   ============================================ */
+
+/* S'assurer que le viewport est correct */
+html {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #2c3e50;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   2. BREAKPOINTS RESPONSIVES
+   ============================================ */
+
+/* Ultra petits écrans (<360px) */
+@media (max-width: 359px) {
+    html {
+        font-size: 12px;
+    }
+}
+
+/* Petits mobiles (360px - 479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+    html {
+        font-size: 13px;
+    }
+}
+
+/* Mobiles (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+/* Tablettes (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+/* Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* Grands écrans (1200px+) */
+@media (min-width: 1200px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* ============================================
+   3. CONTAINERS & LAYOUT
+   ============================================ */
+
+.container-fluid,
+.container {
+    width: 100%;
+    padding-left: 15px;
+    padding-right: 15px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .container-fluid,
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+/* Ultra petits écrans */
+@media (max-width: 479px) {
+    .container-fluid,
+    .container {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+/* ============================================
+   4. GRILLES RESPONSIVES
+   ============================================ */
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6,
+.col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+    position: relative;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    flex: 0 0 auto;
+}
+
+/* Colonnes responsives */
+@media (min-width: 576px) {
+    .col-sm { flex: 0 0 auto; width: 8.333333%; }
+    .col-sm-1 { flex: 0 0 auto; width: 8.333333%; }
+    .col-sm-2 { flex: 0 0 auto; width: 16.666667%; }
+    .col-sm-3 { flex: 0 0 auto; width: 25%; }
+    .col-sm-4 { flex: 0 0 auto; width: 33.333333%; }
+    .col-sm-5 { flex: 0 0 auto; width: 41.666667%; }
+    .col-sm-6 { flex: 0 0 auto; width: 50%; }
+    .col-sm-7 { flex: 0 0 auto; width: 58.333333%; }
+    .col-sm-8 { flex: 0 0 auto; width: 66.666667%; }
+    .col-sm-9 { flex: 0 0 auto; width: 75%; }
+    .col-sm-10 { flex: 0 0 auto; width: 83.333333%; }
+    .col-sm-11 { flex: 0 0 auto; width: 91.666667%; }
+    .col-sm-12 { flex: 0 0 auto; width: 100%; }
+}
+
+@media (min-width: 768px) {
+    .col-md { flex: 0 0 auto; width: 8.333333%; }
+    .col-md-1 { flex: 0 0 auto; width: 8.333333%; }
+    .col-md-2 { flex: 0 0 auto; width: 16.666667%; }
+    .col-md-3 { flex: 0 0 auto; width: 25%; }
+    .col-md-4 { flex: 0 0 auto; width: 33.333333%; }
+    .col-md-5 { flex: 0 0 auto; width: 41.666667%; }
+    .col-md-6 { flex: 0 0 auto; width: 50%; }
+    .col-md-7 { flex: 0 0 auto; width: 58.333333%; }
+    .col-md-8 { flex: 0 0 auto; width: 66.666667%; }
+    .col-md-9 { flex: 0 0 auto; width: 75%; }
+    .col-md-10 { flex: 0 0 auto; width: 83.333333%; }
+    .col-md-11 { flex: 0 0 auto; width: 91.666667%; }
+    .col-md-12 { flex: 0 0 auto; width: 100%; }
+}
+
+@media (min-width: 992px) {
+    .col-lg { flex: 0 0 auto; width: 8.333333%; }
+    .col-lg-1 { flex: 0 0 auto; width: 8.333333%; }
+    .col-lg-2 { flex: 0 0 auto; width: 16.666667%; }
+    .col-lg-3 { flex: 0 0 auto; width: 25%; }
+    .col-lg-4 { flex: 0 0 auto; width: 33.333333%; }
+    .col-lg-5 { flex: 0 0 auto; width: 41.666667%; }
+    .col-lg-6 { flex: 0 0 auto; width: 50%; }
+    .col-lg-7 { flex: 0 0 auto; width: 58.333333%; }
+    .col-lg-8 { flex: 0 0 auto; width: 66.666667%; }
+    .col-lg-9 { flex: 0 0 auto; width: 75%; }
+    .col-lg-10 { flex: 0 0 auto; width: 83.333333%; }
+    .col-lg-11 { flex: 0 0 auto; width: 91.666667%; }
+    .col-lg-12 { flex: 0 0 auto; width: 100%; }
+}
+
+@media (min-width: 1200px) {
+    .col-xl { flex: 0 0 auto; width: 8.333333%; }
+    .col-xl-1 { flex: 0 0 auto; width: 8.333333%; }
+    .col-xl-2 { flex: 0 0 auto; width: 16.666667%; }
+    .col-xl-3 { flex: 0 0 auto; width: 25%; }
+    .col-xl-4 { flex: 0 0 auto; width: 33.333333%; }
+    .col-xl-5 { flex: 0 0 auto; width: 41.666667%; }
+    .col-xl-6 { flex: 0 0 auto; width: 50%; }
+    .col-xl-7 { flex: 0 0 auto; width: 58.333333%; }
+    .col-xl-8 { flex: 0 0 auto; width: 66.666667%; }
+    .col-xl-9 { flex: 0 0 auto; width: 75%; }
+    .col-xl-10 { flex: 0 0 auto; width: 83.333333%; }
+    .col-xl-11 { flex: 0 0 auto; width: 91.666667%; }
+    .col-xl-12 { flex: 0 0 auto; width: 100%; }
+}
+
+/* ============================================
+   5. CARTES & COMPOSANTS
+   ============================================ */
+
+.card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .card {
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
+
+    .card-header {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+
+    .card-body {
+        padding: 16px;
+        font-size: 13px;
+    }
+}
+
+/* Ultra petits écrans */
+@media (max-width: 479px) {
+    .card {
+        margin-bottom: 12px;
+        border-radius: 4px;
+    }
+
+    .card-header {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .card-body {
+        padding: 12px;
+        font-size: 12px;
+    }
+}
+
+/* ============================================
+   6. BOUTONS
+   ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-height: 44px; /* Touch-friendly */
+    white-space: nowrap;
+    gap: 8px;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        min-height: 44px;
+    }
+}
+
+/* Ultra petits écrans */
+@media (max-width: 479px) {
+    .btn {
+        padding: 8px 16px;
+        font-size: 12px;
+        min-height: 40px;
+    }
+}
+
+/* ============================================
+   7. FORMULAIRES
+   ============================================ */
+
+.form-control,
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    min-height: 44px; /* Touch-friendly */
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    outline: none;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .form-control,
+    .form-select {
+        padding: 10px 12px;
+        font-size: 13px;
+        min-height: 44px;
+    }
+}
+
+/* Ultra petits écrans */
+@media (max-width: 479px) {
+    .form-control,
+    .form-select {
+        padding: 8px 10px;
+        font-size: 12px;
+        min-height: 40px;
+    }
+}
+
+/* ============================================
+   8. TABLES RESPONSIVES
+   ============================================ */
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+.table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .table {
+        font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+        padding: 8px 6px;
+    }
+}
+
+/* ============================================
+   9. IMAGES & MÉDIA
+   ============================================ */
+
+.img-responsive,
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-responsive,
+iframe,
+video {
+    max-width: 100%;
+    height: auto;
+    border: none;
+}
+
+/* ============================================
+   10. ACCESSIBILITÉ
+   ============================================ */
+
+/* Focus visible */
+.btn:focus,
+.form-control:focus,
+.form-select:focus,
+a:focus {
+    outline: 2px solid #28a745;
+    outline-offset: 2px;
+}
+
+/* Screen readers only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================
+   11. UTILITAIRES RESPONSIVES
+   ============================================ */
+
+/* Texte non sélectionnable */
+.user-select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Cacher sur mobile */
+.hidden-mobile {
+    display: block;
+}
+
+@media (max-width: 767px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
+
+/* Afficher seulement sur mobile */
+.visible-mobile {
+    display: none !important;
+}
+
+@media (max-width: 767px) {
+    .visible-mobile {
+        display: block !important;
+    }
+}
+
+/* Cacher sur desktop */
+.hidden-desktop {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .hidden-desktop {
+        display: block;
+    }
+}
+
+/* ============================================
+   12. PERFORMANCE & OPTIMISATION
+   ============================================ */
+
+/* Éviter les sauts de page */
+.page-break-inside {
+    page-break-inside: avoid;
+}
+
+/* Texte optimisé */
+.text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Scroll smooth */
+html.scroll-smooth {
+    scroll-behavior: smooth;
+}
+
+/* ============================================
+   13. DARK MODE SUPPORT (FUTUR)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    .card {
+        background: #2c3e50;
+        border-color: #495057;
+        color: #ffffff;
+    }
+
+    .form-control,
+    .form-select {
+        background-color: #495057;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+}
+
+/* ============================================
+   14. IMPRESSION RESPONSIVE
+   ============================================ */
+
+@media print {
+    .hidden-print {
+        display: none !important;
+    }
+
+    .visible-print {
+        display: block !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+
+    .btn {
+        border: 1px solid #000;
+        background: #fff !important;
+        color: #000 !important;
+    }
+}

@@ -1,0 +1,442 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use App\Services\UserRolePermissionService;
+use App\Services\OperationCreationService;
+
+class MobileTerrainController extends Controller
+{
+    public function __construct(
+        private readonly OperationCreationService $operationCreationService,
+    ) {
+    }
+
+    /**
+     * Page d'accueil PWA Terrain
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // Vérifier si l'utilisateur peut créer des opérations
+        if (!UserRolePermissionService::canAccessModule($user, 'operations')) {
+            return redirect()->route('dashboard')->with('error', 'Accès non autorisé pour le terrain');
+        }
+
+        return view('mobile.terrain.index', compact('user'));
+    }
+
+    /**
+     * Formulaire création rapide opération terrain
+     */
+    public function createOperation(Request $request)
+    {
+        $user = Auth::user();
+
+        // Types d'opérations pour terrain
+        $typesOperations = $this->applyActiveFilter(\App\Models\TypeOperation::query(), 'types_operations')
+            ->orderBy('libelle')
+            ->get();
+
+        // Clients récents pour sélection rapide
+        $recentClients = $this->applyActiveFilter(\App\Models\Client::query(), 'clients')
+            ->orderBy('raison_sociale')
+            ->limit(10)
+            ->get();
+
+        // Services opérationnels
+        $services = $this->applyActiveFilter(\App\Models\ServiceOperationnel::query(), 'services_operationnels')
+            ->orderBy('nom')
+            ->get();
+
+        return view('mobile.terrain.create', compact('typesOperations', 'recentClients', 'services', 'user'));
+    }
+
+    /**
+     * Enregistrement opération terrain avec photos
+     */
+    public function storeOperation(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type_operation_id' => 'required|exists:types_operations,id',
+            'client_id' => 'required|exists:clients,id',
+            'service_operationnel_id' => 'required|exists:services_operationnels,id',
+            'montant_estime' => 'nullable|numeric|min:0',
+            'lieu_intervention' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'urgence' => 'boolean',
+            'notes_terrain' => 'nullable|string',
+        ]);
+
+        $result = $this->operationCreationService->createFromTerrain($validated, $user);
+        $operation = $result['operation'];
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['warning']
+                ? 'Opération créée avec succès, avec un avertissement de notification.'
+                : 'Opération créée avec succès !',
+            'operation_id' => $operation->id,
+            'redirect_url' => route('operations.show', ['operationId' => $operation->id]),
+            'warning' => $result['warning'],
+        ]);
+    }
+
+    /**
+     * Liste des opérations terrain
+     */
+    public function operations(Request $request)
+    {
+        $user = Auth::user();
+
+        $query = \App\Models\Operation::with(['typeOperation', 'client', 'serviceOperationnel'])
+            ->where('user_id', $user->id)
+            ->where('description', 'like', '%[SOURCE:TERRAIN]%');
+
+        // Filtres rapides
+        if ($request->status) {
+            $query->where('statut_courant', $request->status);
+        }
+
+        if ($request->search) {
+            $query->where(function($q) use ($request) {
+                $q->where('titre', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%");
+            });
+        }
+
+        $operations = $query->latest()->paginate(10);
+
+        return view('mobile.terrain.operations', compact('operations', 'user'));
+    }
+
+    /**
+     * Détails opération terrain
+     */
+    public function showOperation($id)
+    {
+        $user = Auth::user();
+
+        $operation = \App\Models\Operation::with([
+            'typeOperation',
+            'client',
+            'serviceOperationnel',
+            'documents' => function($query) {
+                $query->latest();
+            }
+        ])
+        ->where('id', $id)
+        ->where('user_id', $user->id)
+        ->where('description', 'like', '%[SOURCE:TERRAIN]%')
+        ->firstOrFail();
+
+        return view('mobile.terrain.show', compact('operation', 'user'));
+    }
+
+    /**
+     * Page de validation pour admin/moderateur/superadmin
+     */
+    public function validation(Request $request)
+    {
+        $user = Auth::user();
+
+        // Vérifier les permissions
+        if (!in_array($user->role, ['admin', 'superadmin', 'moderator', 'moderateur'])) {
+            return redirect()->route('mobile.terrain.index')->with('error', 'Accès non autorisé');
+        }
+
+        // Récupérer les données pour les filtres
+        $services = $this->applyActiveFilter(\App\Models\ServiceOperationnel::query(), 'services_operationnels')
+            ->orderBy('nom')
+            ->get();
+
+        // Statuts pour les filtres
+        $aValider = $this->getOperationsToValidate($user);
+        $enCours = $this->getOperationsInProgress($user);
+        $approuvees = $this->getOperationsApproved($user);
+
+        return view('mobile.terrain.validation', compact('user', 'services', 'aValider', 'enCours', 'approuvees'));
+    }
+
+    /**
+     * API pour les données de validation
+     */
+    public function validationData(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->role, ['admin', 'superadmin', 'moderator', 'moderateur'])) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $data = [
+            'a_valider' => $this->getOperationsToValidate($user),
+            'en_cours' => $this->getOperationsInProgress($user),
+            'approuvees' => $this->getOperationsApproved($user),
+            'urgent' => $this->getUrgentOperations($user),
+            'today' => $this->getTodayOperations($user),
+            'mes_validations' => $this->getMyValidations($user),
+            'historique' => $this->getValidationHistory($user),
+        ];
+
+        return response()->json($data);
+    }
+
+    /**
+     * Soumettre une validation
+     */
+    public function submitValidation(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'operation_id' => 'required|exists:operations,id',
+            'decision' => 'required|in:approve,reject,request_info',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $operation = \App\Models\Operation::findOrFail($validated['operation_id']);
+
+            // Vérifier que l'utilisateur peut valider cette opération
+            if (!$this->canValidateOperation($user, $operation)) {
+                return response()->json(['error' => 'Vous ne pouvez pas valider cette opération'], 403);
+            }
+
+            // Appliquer la validation
+            $this->applyValidation($operation, $user, $validated['decision'], $validated['comment'] ?? '');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Validation enregistrée avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la validation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Méthodes utilitaires pour la validation
+    private function getOperationsToValidate($user)
+    {
+        $query = \App\Models\Operation::with(['client', 'typeOperation', 'serviceOperationnel'])
+            ->where('statut_courant', 'en_attente_de_validation');
+
+        // Filtrer selon le rôle
+        if (!in_array($user->role, ['admin', 'superadmin'])) {
+            $query->where('service_operationnel_id', $user->service_id ?? 0);
+        }
+
+        return $query->orderBy('urgence', 'desc')->orderBy('created_at', 'asc')->get();
+    }
+
+    private function getOperationsInProgress($user)
+    {
+        return \App\Models\Operation::with(['client', 'typeOperation', 'serviceOperationnel'])
+            ->where('statut_courant', 'en_validation')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function getOperationsApproved($user)
+    {
+        return \App\Models\Operation::with(['client', 'typeOperation', 'serviceOperationnel'])
+            ->where('statut_courant', 'Approuvé_en_attente_paiement')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function getUrgentOperations($user)
+    {
+        return \App\Models\Operation::where('urgence', true)
+            ->whereIn('statut_courant', ['en_attente_de_validation', 'en_validation'])
+            ->get();
+    }
+
+    private function getTodayOperations($user)
+    {
+        return \App\Models\Operation::whereDate('created_at', today())
+            ->whereIn('statut_courant', ['en_attente_de_validation', 'en_validation'])
+            ->get();
+    }
+
+    private function getMyValidations($user)
+    {
+        return \App\Models\Operation::where('validated_by', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+    }
+
+    private function getValidationHistory($user)
+    {
+        return \App\Models\Operation::where('validated_by', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->take(50)
+            ->get();
+    }
+
+    private function canValidateOperation($user, $operation)
+    {
+        // Admin et superadmin peuvent tout valider
+        if (in_array($user->role, ['admin', 'superadmin'])) {
+            return true;
+        }
+
+        // Moderator peut valider les opérations de son service
+        if (in_array($user->role, ['moderator', 'moderateur'])) {
+            return $operation->service_operationnel_id == ($user->service_id ?? 0);
+        }
+
+        return false;
+    }
+
+    private function applyValidation($operation, $user, $decision, $comment)
+    {
+        switch ($decision) {
+            case 'approve':
+                $operation->statut_courant = 'Approuvé_en_attente_paiement';
+                $operation->validated_by = $user->id;
+                $operation->validated_at = now();
+                $operation->validation_comment = $comment;
+                break;
+
+            case 'reject':
+                $operation->statut_courant = 'rejetee';
+                $operation->validated_by = $user->id;
+                $operation->validated_at = now();
+                $operation->validation_comment = $comment;
+                break;
+
+            case 'request_info':
+                $operation->statut_courant = 'informations_requises';
+                $operation->validated_by = $user->id;
+                $operation->validated_at = now();
+                $operation->validation_comment = $comment;
+                break;
+        }
+
+        $operation->save();
+
+        // Envoyer une notification
+        $this->sendValidationNotification($operation, $user, $decision);
+    }
+
+    private function sendValidationNotification($operation, $user, $decision)
+    {
+        try {
+            // Log de la notification
+            Log::info("Validation {$decision} pour opération #{$operation->id} par {$user->name}");
+        } catch (\Exception $e) {
+            Log::error("Erreur notification validation: " . $e->getMessage());
+        }
+    }
+    public function syncData(Request $request)
+    {
+        $user = Auth::user();
+
+        // Renvoyer les données nécessaires pour le hors-ligne
+        $data = [
+            'types_operations' => $this->applyActiveFilter(\App\Models\TypeOperation::query(), 'types_operations')->get(),
+            'clients' => $this->applyActiveFilter(\App\Models\Client::query(), 'clients')->get(),
+            'services' => $this->applyActiveFilter(\App\Models\ServiceOperationnel::query(), 'services_operationnels')->get(),
+            'user_operations' => \App\Models\Operation::where('user_id', $user->id)
+                ->where('created_terrain', true)
+                ->with(['typeOperation', 'client'])
+                ->latest()
+                ->take(20)
+                ->get(),
+        ];
+
+        return response()->json($data);
+    }
+
+    private function setupValidationChain($operation)
+    {
+        // Configurer la validation selon le montant
+        $seuil = env('VALIDATION_SEUIL', 250000);
+
+        if ($operation->montant_estime <= $seuil) {
+            // Validation simple
+            DB::table('operation_service_validation')->insert([
+                'operation_id' => $operation->id,
+                'service_operationnel_id' => $operation->service_operationnel_id,
+                'ordre_validation' => 1,
+                'statut' => 'EN_COURS',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            // Validation double (Principal + DG)
+            DB::table('operation_service_validation')->insert([
+                [
+                    'operation_id' => $operation->id,
+                    'service_operationnel_id' => $operation->service_operationnel_id,
+                    'ordre_validation' => 1,
+                    'statut' => 'EN_COURS',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'operation_id' => $operation->id,
+                    'service_operationnel_id' => 1,
+                    'ordre_validation' => 2,
+                    'statut' => 'EN_ATTENTE',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+    }
+
+    private function applyActiveFilter($query, string $table)
+    {
+        if (Schema::hasColumn($table, 'statut')) {
+            return $query->where('statut', 'actif');
+        }
+
+        if (Schema::hasColumn($table, 'status')) {
+            return $query->where('status', 'actif');
+        }
+
+        if (Schema::hasColumn($table, 'is_active')) {
+            return $query->where('is_active', 1);
+        }
+
+        return $query;
+    }
+
+    private function sendTerrainNotification($operation)
+    {
+        try {
+            // Notification au service concerné
+            $service = $operation->serviceOperationnel;
+            if ($service && $service->email) {
+                // Note: Créer le mail NewOperationTerrain si besoin
+                // Mail::to($service->email)->send(new \App\Mail\NewOperationTerrain($operation));
+                Log::info("Notification terrain envoyée pour opération #{$operation->id}");
+            }
+        } catch (\Exception $e) {
+            Log::error("Erreur notification terrain: " . $e->getMessage());
+        }
+    }
+}

@@ -1,0 +1,79 @@
+server {
+    listen 80;
+    server_name kenamservices.com www.kenamservices.com;
+    root /chemin/vers/kenamservices/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+
+    # Optimisation des performances
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_proxied any;
+    gzip_vary on;
+    gzip_types
+        application/atom+xml
+        application/javascript
+        application/json
+        application/ld+json
+        application/manifest+json
+        application/rss+xml
+        application/vnd.geo+json
+        application/vnd.ms-fontobject
+        application/x-font-ttf
+        application/x-web-app-manifest+json
+        application/xhtml+xml
+        application/xml
+        font/opentype
+        image/bmp
+        image/svg+xml
+        image/x-icon
+        text/cache-manifest
+        text/css
+        text/plain
+        text/vcard
+        text/vnd.rim.location.xloc
+        text/vtt
+        text/x-component
+        text/x-cross-domain-policy;
+
+    # Cache pour les assets statiques
+    location ~* \.(jpg|jpeg|gif|png|css|js|ico|webp|tif|tiff|woff|woff2)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # Désactiver l'accès aux fichiers sensibles
+    location ~* (\.env|composer\.json|composer\.lock|package\.json|package-lock\.json|\.git|\.gitignore|\.gitattributes)$ {
+        deny all;
+        return 404;
+    }
+
+    # Augmenter la taille maximale des fichiers téléversés
+    client_max_body_size 100M;
+}

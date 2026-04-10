@@ -1,0 +1,120 @@
+<?php
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
+
+class ComptabiliteController extends Controller
+{
+    /**
+     * Filtrer les factures (AJAX)
+     */
+    public function filterFactures(Request $request)
+    {
+        $query = \DB::table('factures')
+            ->join('clients', 'factures.client_id', '=', 'clients.id')
+            ->select('factures.*', 'clients.nom as client_nom');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+        if ($request->filled('periode')) {
+            // Exemple: filtrer par année/mois
+            $query->whereYear('date_facture', $request->periode);
+        }
+        if ($request->filled('tiers')) {
+            $query->where('client_id', $request->tiers);
+        }
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('factures.numero', 'like', '%' . $request->search . '%')
+                  ->orWhere('clients.nom', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $factures = $query->orderBy('factures.created_at', 'desc')->limit(50)->get();
+        return response()->json(['factures' => $factures]);
+    }
+
+    /**
+     * Importer des factures depuis un fichier Excel
+     */
+    public function importFactures(Request $request)
+    {
+        $request->validate([
+            'factures_excel' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        // Utilise Laravel Excel (maatwebsite/excel)
+        try {
+            $file = $request->file('factures_excel');
+            $rows = \Maatwebsite\Excel\Facades\Excel::toArray(new \stdClass(), $file);
+
+            // Traitement des données...
+            
+            return back()->with('success', 'Factures importées avec succès');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur lors de l\'import: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return view('comptabilite.index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('comptabilite.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
+    }
+}

@@ -1,0 +1,159 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
+class AuthService
+{
+    /**
+     * Validation du numéro de téléphone
+     */
+    public static function validatePhoneNumber($phone)
+    {
+        // Regex pour 10 chiffres commençant par 0, 1 ou 5
+        return preg_match('/^[015][0-9]{9}$/', $phone);
+    }
+
+    /**
+     * Formatage du numéro de téléphone
+     */
+    public static function formatPhoneNumber($phone)
+    {
+        // Supprimer tous les caractères non numériques
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        // Si le numéro commence par 225 (indicatif CI), le remplacer par 0
+        if (strlen($phone) === 12 && str_starts_with($phone, '225')) {
+            $phone = '0' . substr($phone, 3);
+        }
+
+        // Si le numéro commence par +225, le remplacer par 0
+        if (str_starts_with($phone, '+225')) {
+            $phone = '0' . substr($phone, 4);
+        }
+
+        // Si le numéro a 9 chiffres (sans le 0 initial), ajouter le 0
+        if (strlen($phone) === 9) {
+            $phone = '0' . $phone;
+        }
+
+        return $phone;
+    }
+
+    /**
+     * Recherche d'utilisateur par téléphone
+     */
+    public static function findUserByPhone($phone)
+    {
+        $phone = self::formatPhoneNumber($phone);
+
+        // Créer les variations possibles du numéro
+        $phoneVariations = [
+            $phone,
+            '0' . ltrim($phone, '0'), // Format avec 0 initial
+            '225' . ltrim($phone, '0'), // Format avec 225
+            '+225' . ltrim($phone, '0'), // Format avec +225
+            '00225' . ltrim($phone, '0') // Format avec 00225
+        ];
+
+        return User::whereIn('telephone', $phoneVariations)->first();
+    }
+
+    /**
+     * Vérification des permissions de l'utilisateur
+     */
+    public static function checkUserPermissions($user, $module)
+    {
+        switch ($user->role) {
+            case 'superadmin':
+                return true; // Accès à tout
+
+            case 'admin':
+                return $module !== 'dashboard'; // Tout sauf dashboard principal
+
+            case 'moderator':
+            case 'moderateur':
+                return in_array($module, ['operations', 'validations']) ||
+                       $user->canAccessModule($module);
+
+            case 'comptetreso':
+                // Accès uniquement à trésorerie et comptabilité
+                return in_array($module, ['treasury', 'accounting']);
+
+            case 'comptetreso':
+                // Accès uniquement à trésorerie et comptabilité
+                return in_array($module, ['treasury', 'accounting']);
+
+            case 'comptetreso':
+                return 'comptetreso.dashboard';
+
+            case 'comptetreso':
+                // Accès uniquement à trésorerie et comptabilité
+                return in_array($module, ['treasury', 'accounting']);
+
+            case 'comptetreso':
+                return 'comptetreso.dashboard';
+
+            case 'agent':
+                return $module === 'operations'; // Uniquement les opérations
+
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Journalisation de la connexion
+     */
+    public static function logLogin($user)
+    {
+        Log::info('Connexion réussie', [
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'role' => $user->role,
+            'telephone' => $user->telephone,
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
+    }
+
+    /**
+     * Détermination de la route de redirection
+     */
+    public static function getRedirectRoute($user)
+    {
+        switch ($user->role) {
+            case 'superadmin':
+            case 'admin':
+                return 'dashboard';
+
+            case 'moderator':
+            case 'moderateur':
+            case 'comptetreso':
+                // Accès uniquement à trésorerie et comptabilité
+                return in_array($module, ['treasury', 'accounting']);
+
+            case 'comptetreso':
+                return 'comptetreso.dashboard';
+
+            case 'comptetreso':
+                // Accès uniquement à trésorerie et comptabilité
+                return in_array($module, ['treasury', 'accounting']);
+
+            case 'comptetreso':
+                return 'comptetreso.dashboard';
+
+            case 'agent':
+                return 'operations.index';
+
+            case 'comptetreso':
+                return 'comptetreso.dashboard';
+
+            default:
+                Log::warning('Rôle non reconnu', ['user_id' => $user->id, 'role' => $user->role]);
+                return 'operations.index';
+        }
+    }
+}

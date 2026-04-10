@@ -1,0 +1,637 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use App\Models\EntrepriseSettings;
+use App\Models\OperationalService;
+
+class ParametrageController extends Controller
+{
+    /**
+     * Afficher la page principale de paramétrage avec toutes les cartes
+     */
+    public function index()
+    {
+        // Récupérer les statistiques et informations de la base de données avec gestion d'erreur
+        $stats = [
+            'users' => $this->safeCount('App\Models\User'),
+            'active_users' => $this->safeCountWhere('App\Models\User', 'is_active', true),
+            'services' => $this->safeCount('App\Models\ServiceOperationnel'),
+            'types_operations' => $this->safeCount('App\Models\TypeOperation'),
+            'operations_total' => $this->safeCount('App\Models\Operation'),
+            'operations_pending' => $this->safeCountWhere('App\Models\Operation', 'statut_courant', 'pending_validation'),
+            'operations_approved' => $this->safeCountWhere('App\Models\Operation', 'statut_courant', 'terminee'),
+            'operations_rejected' => $this->safeCountWhere('App\Models\Operation', 'statut_courant', 'rejected'),
+        ];
+    }
+
+    /**
+     * Tester la connexion Hikvision
+     */
+    public function testHikvision(Request $request)
+    {
+        // Logique de test de connexion
+        return response()->json(['status' => 'success', 'message' => 'Connexion réussie']);
+    }
+
+
+    private function safeCount($model)
+    {
+        try {
+            return $model::count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    private function safeCountWhere($model, $column, $value)
+    {
+        try {
+            return $model::where($column, $value)->count();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Afficher une section spécifique de paramétrage
+     */
+    public function show($section)
+    {
+        switch($section) {
+            case 'entreprise':
+                return $this->entreprise();
+            case 'email':
+                $config = \App\Models\Setting::get('email_config', []);
+                return view('parametrage.email', compact('config'));
+            case 'systeme':
+                $config = \App\Models\Setting::get('system_config', []);
+                return view('parametrage.systeme', compact('config'));
+            case 'services':
+                $services = \App\Models\ServiceOperationnel::all(); // Ou Service::all() selon votre modèle préféré
+                return view('parametrage.services', compact('services'));
+            default:
+                abort(404);
+        }
+    }
+
+    // ... (update method remains largely the same, dispatching to save methods)
+
+    public function saveEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mail_mailer' => 'required|string|in:smtp,mail,sendmail',
+            'mail_host' => 'required|string|max:255',
+            'mail_port' => 'required|integer|min:1|max:65535',
+            'mail_encryption' => 'nullable|string|in:tls,ssl',
+            'mail_username' => 'required|string|max:255', // email validation removed for username flexibility
+            'mail_password' => 'required|string|max:255',
+            'mail_from_address' => 'required|email|max:255',
+            'mail_from_name' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $config = [
+                'mailer' => $request->mail_mailer,
+                'host' => $request->mail_host,
+                'port' => $request->mail_port,
+                'encryption' => $request->mail_encryption,
+                'username' => $request->mail_username,
+                'password' => $request->mail_password,
+                'from_address' => $request->mail_from_address,
+                'from_name' => $request->mail_from_name,
+            ];
+
+            \App\Models\Setting::set('email_config', $config);
+
+            // Update runtime config for immediate testing if needed (optional)
+            // config(['mail.mailers.smtp.host' => ...]);
+
+            return response()->json(['success' => true, 'message' => 'Configuration email enregistrée en base de données!']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function saveSysteme(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'app_timezone' => 'required|string|max:100',
+            'app_locale' => 'required|string|in:fr,en',
+            'session_lifetime' => 'required|integer|min:1|max:1440',
+            'max_file_size' => 'required|integer|min:1|max:100',
+            'backup_frequency' => 'required|string|in:daily,weekly,monthly',
+            'debug_mode' => 'nullable|string',
+            'maintenance_mode' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $config = $request->except(['_token']);
+
+            // Les checkboxes ne sont envoyées que si cochées
+            $config['debug_mode'] = $request->has('debug_mode') ? 'on' : 'off';
+            $config['maintenance_mode'] = $request->has('maintenance_mode') ? 'on' : 'off';
+
+            \App\Models\Setting::set('system_config', $config);
+
+            return response()->json(['success' => true, 'message' => 'Paramètres système enregistrés avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Tester la connexion email
+     */
+    public function testEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'test_email' => 'required|email',
+            'test_subject' => 'required|string|max:255',
+            'test_message' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Configuration temporaire pour le test
+            config([
+                'mail.mailer' => $request->mail_mailer ?? 'smtp',
+                'mail.host' => $request->mail_host ?? 'smtp.gmail.com',
+                'mail.port' => $request->mail_port ?? 587,
+                'mail.encryption' => $request->mail_encryption ?? 'tls',
+                'mail.username' => $request->mail_username,
+                'mail.password' => $request->mail_password,
+                'mail.from.address' => $request->mail_from_address ?? 'test@example.com',
+                'mail.from.name' => $request->mail_from_name ?? 'Test Email'
+            ]);
+
+            // Envoi de l'email de test
+            Mail::raw($request->test_message, function ($message) use ($request) {
+                $message->to($request->test_email)
+                       ->subject($request->test_subject);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email de test envoyé avec succès!'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Échec de l\'envoi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sauvegarder un fichier de configuration
+     */
+    private function saveConfigFile($type, $config)
+    {
+        $configPath = config_path('custom/' . $type . '.json');
+        $configDir = dirname($configPath);
+
+        if (!File::exists($configDir)) {
+            File::makeDirectory($configDir, 0755, true);
+        }
+
+        File::put($configPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Charger un fichier de configuration
+     */
+    private function loadConfigFile($type)
+    {
+        $configPath = config_path('custom/' . $type . '.json');
+
+        if (File::exists($configPath)) {
+            $content = File::get($configPath);
+            return json_decode($content, true);
+        }
+
+        return [];
+    }
+
+    /**
+     * Afficher la page de paramétrage de l'entreprise
+     */
+    public function entreprise()
+    {
+        try {
+            $entreprise = EntrepriseSettings::getActive();
+            // S'assurer qu'on a au moins un objet vide pour éviter les erreurs dans la vue
+            if (!$entreprise) {
+                $entreprise = new EntrepriseSettings();
+            }
+        } catch (\Exception $e) {
+            // Si le modèle n'existe pas, créer un objet stdClass avec des propriétés par défaut
+            $entreprise = (object) [
+                'nom_entreprise' => 'KENAM Services',
+                'sigle' => 'KENAM',
+                'adresse' => '',
+                'telephone' => '',
+                'email_contact' => '',
+                'site_web' => '',
+                'rccm' => '',
+                'ifu' => '',
+                'cnss' => '',
+                'compte_bancaire' => '',
+                'tva_rate' => 18.00,
+                'email_tresorerie' => '',
+                'email_caisse_1' => '',
+                'email_caisse_2' => '',
+                'email_destinataire_principal' => '',
+                'email_dg' => '',
+                'seuil_validation_dg' => 1000000,
+                'seuil_validation_principal' => 500000,
+                'sms_provider' => '',
+                'sms_api_key' => '',
+                'sms_api_secret' => '',
+                'sms_sender_id' => '',
+                'sms_api_url' => '',
+                'sms_is_active' => false,
+                'logo_path' => null,
+                'id' => null
+            ];
+        }
+
+        $emailConfig = \App\Models\Setting::get('email_config', []);
+        $systemConfig = \App\Models\Setting::get('system_config', []);
+
+        return view('parametrage.entreprise', compact('entreprise', 'emailConfig', 'systemConfig'));
+    }
+
+    /**
+     * Sauvegarder les paramètres de l'entreprise
+     */
+    public function saveEntreprise(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nom_entreprise' => 'required|string|max:255',
+            'sigle' => 'required|string|max:50',
+            'adresse' => 'required|string',
+            'telephone' => 'required|string|max:20',
+            'email_contact' => 'required|email|max:255',
+            'site_web' => 'required|string|max:255',
+            'rccm' => 'required|string|max:50',
+            'ifu' => 'nullable|string|max:50',
+            'cnss' => 'nullable|string|max:50',
+            'compte_bancaire' => 'required|string|max:100',
+            'tva_rate' => 'required|numeric|min:0|max:100',
+            'email_tresorerie' => 'nullable|email|max:255',
+            'email_caisse_1' => 'nullable|email|max:255',
+            'email_caisse_2' => 'nullable|email|max:255',
+            'email_destinataire_principal' => 'nullable|email|max:255',
+            'seuil_validation_dg' => 'nullable|numeric|min:0',
+            'seuil_validation_principal' => 'nullable|numeric|min:0',
+            'logo_entreprise' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $entreprise = EntrepriseSettings::getActive();
+            if (!$entreprise) {
+                $entreprise = new EntrepriseSettings();
+                $entreprise->actif = true;
+            }
+
+            $data = $request->except(['logo_entreprise', '_token']);
+
+            // Gestion de l'upload du logo
+            if ($request->hasFile('logo_entreprise')) {
+                // Supprimer l'ancien logo si nécessaire
+                if ($entreprise->logo_path && File::exists(public_path('storage/' . $entreprise->logo_path))) {
+                    try {
+                        File::delete(public_path('storage/' . $entreprise->logo_path));
+                    } catch (\Exception $e) {
+                        // Ignorer si échec de suppression
+                    }
+                }
+
+                $file = $request->file('logo_entreprise');
+                $filename = 'logo_' . time() . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('logos', $filename, 'public');
+                $data['logo_path'] = 'logos/' . $filename;
+            }
+
+            $entreprise->fill($data);
+            $entreprise->save();
+
+            // Effacer le cache pour que les changements soient visibles immédiatement
+            \Illuminate\Support\Facades\Cache::forget('entreprise_settings.active');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Informations de l\'entreprise mises à jour avec succès.',
+                'logo_url' => $entreprise->logo_path ? asset('storage/' . $entreprise->logo_path) : null
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Sauvegarder la configuration SMS
+     */
+    public function saveSms(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'sms_provider' => 'nullable|string|max:50',
+            'sms_api_key' => 'nullable|string|max:255',
+            'sms_api_secret' => 'nullable|string|max:500',
+            'sms_username' => 'nullable|string|max:255',
+            'sms_password' => 'nullable|string|max:500',
+            'sms_sender_id' => 'nullable|string|max:20',
+            'sms_api_url' => 'nullable|string|max:255',
+            'sms_is_active' => 'nullable'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $entreprise = EntrepriseSettings::getActive();
+            if (!$entreprise) {
+                $entreprise = new EntrepriseSettings();
+                $entreprise->actif = true;
+            }
+
+            $smsUsername = $request->input('sms_username', $request->input('sms_api_key'));
+            $smsPassword = $request->input('sms_password', $request->input('sms_api_secret'));
+
+            $data = [
+                'sms_provider' => $request->input('sms_provider'),
+                'sms_api_key' => $request->input('sms_api_key', $smsUsername),
+                'sms_api_secret' => $request->input('sms_api_secret', $smsPassword),
+                'sms_username' => $smsUsername,
+                'sms_password' => $smsPassword,
+                'sms_sender_id' => $request->input('sms_sender_id'),
+                'sms_api_url' => $request->input('sms_api_url'),
+            ];
+
+            $data['sms_is_active'] = $request->has('sms_is_active');
+
+            $entreprise->update($data);
+
+            \Illuminate\Support\Facades\Cache::forget('entreprise_settings.active');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Configuration SMS enregistrée avec succès.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function email()
+    {
+        return $this->entreprise();
+    }
+
+    public function general()
+    {
+        return $this->entreprise();
+    }
+
+    public function systeme()
+    {
+        return $this->entreprise();
+    }
+
+    /**
+     * Afficher la page de configuration des services
+     */
+    public function services()
+    {
+        try {
+            // Récupérer tous les services opérationnels
+            $services = \App\Models\ServiceOperationnel::withCount('operations')
+                ->orderBy('nom')
+                ->get();
+
+            // Récupérer les types d'opérations
+            $typesOperations = \App\Models\TypeOperation::orderBy('libelle')
+                ->where('actif', true)
+                ->get();
+
+            // Récupérer les utilisateurs par rôle
+            $usersByRole = \App\Models\User::select('role', \DB::raw('count(*) as count'))
+                ->groupBy('role')
+                ->orderBy('count', 'desc')
+                ->get();
+
+            return view('parametrage.services', compact('services', 'typesOperations', 'usersByRole'));
+
+        } catch (\Exception $e) {
+            // En cas d'erreur, retourner une vue avec des données vides
+            return view('parametrage.services', [
+                'services' => collect([]),
+                'typesOperations' => collect([]),
+                'usersByRole' => collect([])
+            ]);
+        }
+    }
+
+    /**
+     * Afficher la page de configuration Hikvision
+     */
+    public function hikvision()
+    {
+        try {
+            $config = [
+                'ip' => env('HIKVISION_IP', '192.168.1.70'),
+                'port' => env('HIKVISION_PORT', '80'),
+                'username' => env('HIKVISION_USER', 'admin'),
+                'password' => env('HIKVISION_PASS', ''),
+                'timeout' => env('HIKVISION_TIMEOUT', '30'),
+                'endpoint' => env('HIKVISION_ENDPOINT', '/ISAPI/AccessControl/AcsEvent'),
+            ];
+
+            return view('parametrage.hikvision', compact('config'));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur lors du chargement de la configuration Hikvision: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Afficher la page de configuration Hikvision (alias)
+     */
+    public function hikvisionConfig()
+    {
+        return $this->hikvision();
+    }
+
+    /**
+     * Sauvegarder la configuration Hikvision
+     */
+    public function saveHikvision(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ip' => 'required|ip',
+            'port' => 'required|integer|min:1|max:65535',
+            'username' => 'required|string|max:100',
+            'password' => 'required|string|max:255',
+            'timeout' => 'nullable|integer|min:1|max:300',
+            'endpoint' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            // Mettre à jour le fichier .env
+            $envPath = base_path('.env');
+            $envContent = file_get_contents($envPath);
+
+            $configs = [
+                'HIKVISION_IP' => $request->ip,
+                'HIKVISION_PORT' => $request->port,
+                'HIKVISION_USER' => $request->username,
+                'HIKVISION_PASS' => $request->password,
+                'HIKVISION_TIMEOUT' => $request->timeout ?? '30',
+                'HIKVISION_ENDPOINT' => $request->endpoint ?? '/ISAPI/AccessControl/AcsEvent',
+            ];
+
+            foreach ($configs as $key => $value) {
+                $pattern = "/^{$key}=.*/m";
+                $replacement = "{$key}={$value}";
+
+                if (preg_match($pattern, $envContent)) {
+                    $envContent = preg_replace($pattern, $replacement, $envContent);
+                } else {
+                    $envContent .= "\n{$key}={$value}";
+                }
+            }
+
+            file_put_contents($envPath, $envContent);
+
+            return back()->with('success', 'Configuration Hikvision sauvegardée avec succès');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur lors de la sauvegarde de la configuration: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Tester la connexion Hikvision
+     */
+    public function testHikvision(Request $request)
+    {
+        try {
+            $ip = $request->input('ip', env('HIKVISION_IP', '192.168.1.70'));
+            $port = $request->input('port', env('HIKVISION_PORT', '80'));
+            $username = $request->input('username', env('HIKVISION_USER', 'admin'));
+            $password = $request->input('password', env('HIKVISION_PASS', ''));
+            $timeout = $request->input('timeout', env('HIKVISION_TIMEOUT', '30'));
+
+            $url = "http://{$ip}:{$port}/ISAPI/System/status";
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+            curl_setopt($ch, CURLOPT_USERPWD, $username . ':' . $password);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            $success = ($httpCode === 200 && !$error);
+
+            return response()->json([
+                'success' => $success,
+                'message' => $success ? 'Connexion Hikvision réussie' : 'Échec de connexion: ' . ($error ?: "HTTP {$httpCode}"),
+                'http_code' => $httpCode,
+                'response' => $success ? substr($response, 0, 500) : null
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de test: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Diagnostic Hikvision
+     */
+    public function hikvisionDiagnostic(Request $request)
+    {
+        try {
+            $diagnostic = [
+                'config' => [
+                    'ip' => env('HIKVISION_IP', 'Non configuré'),
+                    'port' => env('HIKVISION_PORT', 'Non configuré'),
+                    'username' => env('HIKVISION_USER', 'Non configuré'),
+                    'password' => env('HIKVISION_PASS') ? '***' : 'Non configuré',
+                    'timeout' => env('HIKVISION_TIMEOUT', 'Non configuré'),
+                ],
+                'connectivity' => $this->testHikvision($request)->getData(true),
+                'environment' => [
+                    'php_version' => PHP_VERSION,
+                    'curl_enabled' => function_exists('curl_version'),
+                    'allow_url_fopen' => ini_get('allow_url_fopen'),
+                ]
+            ];
+
+            return response()->json($diagnostic);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors du diagnostic: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Synchronisation Hikvision
+     */
+    public function hikvisionSync(Request $request)
+    {
+        try {
+            // Appeler le service de synchronisation
+            $syncService = app(\App\Services\HikvisionFaceSyncService::class);
+            $results = $syncService->syncAllPendingEmployees();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Synchronisation lancée',
+                'results' => $results
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la synchronisation: ' . $e->getMessage()
+            ]);
+        }
+    }
+}

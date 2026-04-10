@@ -1,0 +1,44 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Ajout du champ phone aux utilisateurs
+        Schema::table('users', function (Blueprint $table) {
+            if (!Schema::hasColumn('users', 'phone')) {
+                $table->string('phone', 30)->nullable()->after('email');
+            }
+        });
+
+        // Ajout du champ phone aux services
+        if (Schema::hasTable('services')) {
+            Schema::table('services', function (Blueprint $table) {
+                if (!Schema::hasColumn('services', 'phone')) {
+                    $table->string('phone', 30)->nullable()->after('email');
+                }
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            if (Schema::hasColumn('users', 'phone')) {
+                $table->dropColumn('phone');
+            }
+        });
+
+        if (Schema::hasTable('services')) {
+            Schema::table('services', function (Blueprint $table) {
+                if (Schema::hasColumn('services', 'phone')) {
+                    $table->dropColumn('phone');
+                }
+            });
+        }
+    }
+};

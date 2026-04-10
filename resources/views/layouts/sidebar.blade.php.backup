@@ -1,0 +1,218 @@
+<!-- Sidebar -->
+<ul class="sidebar-menu" data-widget="tree">
+    <li class="header">MENU PRINCIPAL</li>
+    
+    @if(Auth::user()->role === 'comptetreso')
+        <!-- Menu Compte Treso -->
+        <li class="{{ request()->is('comptetreso*') ? 'active' : '' }}">
+            <a href="{{ route('comptetreso.dashboard') }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard Treso</span>
+            </a>
+        </li>
+        
+        <li class="{{ request()->is('comptetreso/operations*') ? 'active' : '' }}">
+            <a href="{{ route('comptetreso.operations') }}">
+                <i class="fas fa-list"></i>
+                <span>Opérations à Approuver</span>
+            </a>
+        </li>
+        
+        <li class="header">MODULES</li>
+        
+        <li class="{{ request()->is('treasury*') ? 'active' : '' }}">
+            <a href="/treasury">
+                <i class="fas fa-coins"></i>
+                <span>Trésorerie</span>
+            </a>
+        </li>
+        
+        <li class="{{ request()->is('accounting*') ? 'active' : '' }}">
+            <a href="/accounting">
+                <i class="fas fa-calculator"></i>
+                <span>Comptabilité</span>
+            </a>
+        </li>
+        
+    @else
+        <!-- Menu pour les autres rôles -->
+        @if(Auth::user()->role === 'superadmin' || Auth::user()->role === 'admin')
+            <li class="{{ request()->is('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('operations'))
+            <li class="{{ request()->is('operations*') ? 'active' : '' }}">
+                <a href="{{ route('operations.index') }}">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Opérations</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('validations'))
+            <li class="{{ request()->is('validations*') ? 'active' : '' }}">
+                <a href="{{ route('validations.index') }}">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Validations</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('treasury'))
+            <li class="{{ request()->is('treasury*') ? 'active' : '' }}">
+                <a href="/treasury">
+                    <i class="fas fa-coins"></i>
+                    <span>Trésorerie</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('accounting'))
+            <li class="{{ request()->is('accounting*') ? 'active' : '' }}">
+                <a href="/accounting">
+                    <i class="fas fa-calculator"></i>
+                    <span>Comptabilité</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('fleet'))
+            <li class="{{ request()->is('fleet*') || request()->is('parc*') ? 'active' : '' }}">
+                <a href="/fleet">
+                    <i class="fas fa-car"></i>
+                    <span>Parc Automobile</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('hr'))
+            <li class="{{ request()->is('hr*') ? 'active' : '' }}">
+                <a href="/hr">
+                    <i class="fas fa-users"></i>
+                    <span>Ressources Humaines</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('suppliers'))
+            <li class="{{ request()->is('suppliers*') ? 'active' : '' }}">
+                <a href="/suppliers">
+                    <i class="fas fa-truck"></i>
+                    <span>Fournisseurs</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('warehouse'))
+            <li class="{{ request()->is('warehouse*') ? 'active' : '' }}">
+                <a href="/warehouse">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Entrepôt</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('invoicing'))
+            <li class="{{ request()->is('invoicing*') ? 'active' : '' }}">
+                <a href="/invoicing">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Facturation</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('reporting'))
+            <li class="{{ request()->is('reporting*') ? 'active' : '' }}">
+                <a href="/reporting">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Rapports</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('commercial'))
+            <li class="{{ request()->is('commercial*') ? 'active' : '' }}">
+                <a href="/commercial">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Commercial</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('prospection'))
+            <li class="{{ request()->is('prospection*') ? 'active' : '' }}">
+                <a href="/prospection">
+                    <i class="fas fa-search"></i>
+                    <span>Prospection</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('ateliers'))
+            <li class="{{ request()->is('ateliers*') ? 'active' : '' }}">
+                <a href="/ateliers">
+                    <i class="fas fa-tools"></i>
+                    <span>Ateliers</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('projects'))
+            <li class="{{ request()->is('projects*') ? 'active' : '' }}">
+                <a href="/projects">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Projets</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('audit'))
+            <li class="{{ request()->is('audit*') ? 'active' : '' }}">
+                <a href="/audit">
+                    <i class="fas fa-audit"></i>
+                    <span>Audit</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('services'))
+            <li class="{{ request()->is('services*') ? 'active' : '' }}">
+                <a href="/services">
+                    <i class="fas fa-cogs"></i>
+                    <span>Services</span>
+                </a>
+            </li>
+        @endif
+        
+        @if(Auth::user()->canAccessModule('system'))
+            <li class="{{ request()->is('admin*') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard') }}">
+                    <i class="fas fa-cog"></i>
+                    <span>Administration</span>
+                </a>
+            </li>
+        @endif
+    @endif
+    
+    <li class="header">COMPTE</li>
+    <li>
+        <a href="{{ route('profile') }}">
+            <i class="fas fa-user"></i>
+            <span>Mon Profil</span>
+        </a>
+    </li>
+    <li>
+        <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+        </a>
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+            @csrf
+        </form>
+    </li>
+</ul>
