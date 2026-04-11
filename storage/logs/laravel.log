@@ -8462,3 +8462,73 @@
 [stacktrace]
 #0 {main}
 "} 
+[2026-04-11 07:54:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:55:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:56:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:57:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:58:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:59:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:00:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:01:11] local.ERROR: include(C:\laragon\www\kenam\app\Console\Commands\CleanDemoData.php): Failed to open stream: Resource temporarily unavailable {"exception":"[object] (ErrorException(code: 0): include(C:\\laragon\\www\\kenam\\app\\Console\\Commands\\CleanDemoData.php): Failed to open stream: Resource temporarily unavailable at C:\\laragon\\www\\kenam\\vendor\\composer\\ClassLoader.php:576)
+[stacktrace]
+#0 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError(2, 'include(C:\\\\lara...', 'C:\\\\laragon\\\\www\\\\...', 576)
+#1 C:\\laragon\\www\\kenam\\vendor\\composer\\ClassLoader.php(576): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}(2, 'include(C:\\\\lara...', 'C:\\\\laragon\\\\www\\\\...', 576)
+#2 C:\\laragon\\www\\kenam\\vendor\\composer\\ClassLoader.php(576): include('C:\\\\laragon\\\\www\\\\...')
+#3 C:\\laragon\\www\\kenam\\vendor\\composer\\ClassLoader.php(427): Composer\\Autoload\\{closure}('C:\\\\laragon\\\\www\\\\...')
+#4 [internal function]: Composer\\Autoload\\ClassLoader->loadClass('App\\\\Console\\\\Com...')
+#5 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(373): is_subclass_of('App\\\\Console\\\\Com...', 'Illuminate\\\\Cons...')
+#6 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(498): Illuminate\\Foundation\\Console\\Kernel->load(Array)
+#7 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(483): Illuminate\\Foundation\\Console\\Kernel->discoverCommands()
+#8 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(196): Illuminate\\Foundation\\Console\\Kernel->bootstrap()
+#9 Command line code(1): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#10 {main}
+"} 
+[2026-04-11 08:01:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:02:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:03:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:04:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:05:12] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:06:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 08:07:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
