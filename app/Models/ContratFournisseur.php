@@ -1,33 +1,4 @@
-    /**
-     * Crée une facture en comptabilité à la fin du contrat fournisseur (statut 'termine').
-     */
-    public function createFactureIfTerminee()
-    {
-        if ($this->statut === 'termine' && $this->date_fin && !$this->factureCreee()) {
-            \App\Models\Facture::create([
-                'numero' => 'FAC-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
-                'client_id' => $this->fournisseur_id, // ou adaptez selon la structure
-                'date_facture' => now(),
-                'montant_ht' => $this->montant_ht,
-                'tva' => $this->tva,
-                'montant_ttc' => $this->montant_ttc,
-                'statut' => 'en_attente',
-                'created_by' => auth()->id() ?? 1,
-            ]);
-        }
-    }
-
-    /**
-     * Vérifie si une facture a déjà été créée pour ce contrat (évite les doublons).
-     */
-    public function factureCreee()
-    {
-        return \App\Models\Facture::where('client_id', $this->fournisseur_id)
-            ->where('montant_ht', $this->montant_ht)
-            ->whereDate('date_facture', '>=', $this->date_fin)
-            ->exists();
-    }
-<?php
+    <?php
 
 namespace App\Models;
 
@@ -79,15 +50,15 @@ class ContratFournisseur extends Model
             if (empty($contrat->reference)) {
                 $contrat->reference = 'CTR-' . date('Ymd') . '-' . strtoupper(Str::random(6));
             }
-            
+
             if (empty($contrat->statut)) {
                 $contrat->statut = 'en_cours';
             }
-            
+
             if (empty($contrat->tva)) {
                 $contrat->tva = 20.0; // TVA par défaut à 20%
             }
-            
+
             $contrat->calculerMontants();
         });
 
@@ -132,9 +103,9 @@ class ContratFournisseur extends Model
 
         $statut = $this->statut;
         $libelle = ucfirst(str_replace('_', ' ', $statut));
-        
-        return sprintf('<span class="badge badge-%s">%s</span>', 
-            $badges[$statut] ?? 'secondary', 
+
+        return sprintf('<span class="badge badge-%s">%s</span>',
+            $badges[$statut] ?? 'secondary',
             $libelle
         );
     }
@@ -150,7 +121,7 @@ class ContratFournisseur extends Model
     public function getEstBientotExpireAttribute()
     {
         if (!$this->date_fin) return false;
-        
+
         $joursRestants = $this->jours_restants;
         return $joursRestants > 0 && $joursRestants <= 30;
     }
@@ -171,5 +142,35 @@ class ContratFournisseur extends Model
     {
         if ($this->montant_ttc <= 0) return 0;
         return min(100, round(($this->montant_ttc - $this->montant_restant) / $this->montant_ttc * 100, 2));
+    }
+
+    /**
+     * Crée une facture en comptabilité à la fin du contrat fournisseur (statut 'termine').
+     */
+    public function createFactureIfTerminee()
+    {
+        if ($this->statut === 'termine' && $this->date_fin && !$this->factureCreee()) {
+            \App\Models\Facture::create([
+                'numero' => 'FAC-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+                'client_id' => $this->fournisseur_id, // ou adaptez selon la structure
+                'date_facture' => now(),
+                'montant_ht' => $this->montant_ht,
+                'tva' => $this->tva,
+                'montant_ttc' => $this->montant_ttc,
+                'statut' => 'en_attente',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+        }
+    }
+
+    /**
+     * Vérifie si une facture a déjà été créée pour ce contrat (évite les doublons).
+     */
+    public function factureCreee()
+    {
+        return \App\Models\Facture::where('client_id', $this->fournisseur_id)
+            ->where('montant_ht', $this->montant_ht)
+            ->whereDate('date_facture', '>=', $this->date_fin)
+            ->exists();
     }
 }

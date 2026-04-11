@@ -8408,3 +8408,57 @@
 [stacktrace]
 #0 {main}
 "} 
+[2026-04-11 07:45:13] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:46:12] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:47:13] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:48:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:49:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:50:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:51:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:52:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:32)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:52:18] local.ERROR: There are no commands defined in the "log" namespace. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\NamespaceNotFoundException(code: 0): There are no commands defined in the \"log\" namespace. at C:\\laragon\\www\\kenam\\vendor\\symfony\\console\\Application.php:677)
+[stacktrace]
+#0 C:\\laragon\\www\\kenam\\vendor\\symfony\\console\\Application.php(726): Symfony\\Component\\Console\\Application->findNamespace('log')
+#1 C:\\laragon\\www\\kenam\\vendor\\symfony\\console\\Application.php(301): Symfony\\Component\\Console\\Application->find('log:clear')
+#2 C:\\laragon\\www\\kenam\\vendor\\symfony\\console\\Application.php(194): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(198): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 C:\\laragon\\www\\kenam\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#5 C:\\laragon\\www\\kenam\\artisan(13): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))
+#6 {main}
+"} 
+[2026-04-11 07:53:09] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:53:11] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
+[2026-04-11 07:53:14] local.ERROR: Namespace declaration statement has to be the very first statement or after any declare call in the script {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Namespace declaration statement has to be the very first statement or after any declare call in the script at C:\\laragon\\www\\kenam\\app\\Models\\ContratFournisseur.php:3)
+[stacktrace]
+#0 {main}
+"} 
