@@ -15,11 +15,17 @@ return new class extends Migration
             // Ajouter le champ engin_id s'il n'existe pas
             if (!Schema::hasColumn('commande_fournisseurs', 'engin_id')) {
                 $table->foreignId('engin_id')->nullable()->after('fournisseur_id')->constrained('vehicules')->nullOnDelete();
+            }
+
+            // Ajouter le champ engin_statut s'il n'existe pas
+            if (!Schema::hasColumn('commande_fournisseurs', 'engin_statut')) {
                 $table->string('engin_statut')->default('disponible')->after('engin_id'); // disponible, en_panne, en_maintenance, loue
             }
-            
-            // Ajouter l'index pour optimiser les requêtes
-            $table->index(['engin_id', 'engin_statut']);
+
+            // Ajouter l'index pour optimiser les requêtes seulement s'il n'existe pas
+            if (!Schema::hasIndex('commande_fournisseurs', 'commande_fournisseurs_engin_id_engin_statut_index')) {
+                $table->index(['engin_id', 'engin_statut']);
+            }
         });
     }
 

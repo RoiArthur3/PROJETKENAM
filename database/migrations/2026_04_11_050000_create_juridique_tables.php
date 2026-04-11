@@ -12,33 +12,36 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Table des contrats juridiques
-        Schema::create('juridique_contrats', function (Blueprint $table) {
-            $table->id();
-            $table->string('reference', 100)->unique();
-            $table->string('titre', 255);
-            $table->text('description')->nullable();
-            $table->string('type_contrat', 100); // vente, achat, service, location, etc.
-            $table->string('partie_a', 255); // Client/Fournisseur A
-            $table->string('partie_b', 255); // Client/Fournisseur B
-            $table->date('date_signature');
-            $table->date('date_debut');
-            $table->date('date_fin')->nullable();
-            $table->decimal('montant', 15, 2)->nullable();
-            $table->string('devise', 10)->default('XOF');
-            $table->string('statut', 50)->default('actif'); // actif, expire, resilie, etc.
-            $table->string('fichier_contrat')->nullable(); // chemin vers le fichier PDF
-            $table->text('notes')->nullable();
-            $table->unsignedBigInteger('created_by');
-            $table->timestamps();
-            
-            $table->index('type_contrat');
-            $table->index('statut');
-            $table->index('date_signature');
-            $table->index('date_fin');
-        });
+        if (!Schema::hasTable('juridique_contrats')) {
+            Schema::create('juridique_contrats', function (Blueprint $table) {
+                $table->id();
+                $table->string('reference', 100)->unique();
+                $table->string('titre', 255);
+                $table->text('description')->nullable();
+                $table->string('type_contrat', 100); // vente, achat, service, location, etc.
+                $table->string('partie_a', 255); // Client/Fournisseur A
+                $table->string('partie_b', 255); // Client/Fournisseur B
+                $table->date('date_signature');
+                $table->date('date_debut');
+                $table->date('date_fin')->nullable();
+                $table->decimal('montant', 15, 2)->nullable();
+                $table->string('devise', 10)->default('XOF');
+                $table->string('statut', 50)->default('actif'); // actif, expire, resilie, etc.
+                $table->string('fichier_contrat')->nullable(); // chemin vers le fichier PDF
+                $table->text('notes')->nullable();
+                $table->unsignedBigInteger('created_by');
+                $table->timestamps();
+
+                $table->index('type_contrat');
+                $table->index('statut');
+                $table->index('date_signature');
+                $table->index('date_fin');
+            });
+        }
 
         // 2. Table des documents juridiques
-        Schema::create('juridique_documents', function (Blueprint $table) {
+        if (!Schema::hasTable('juridique_documents')) {
+            Schema::create('juridique_documents', function (Blueprint $table) {
             $table->id();
             $table->string('reference', 100)->unique()->nullable();
             $table->string('titre', 255);
@@ -52,16 +55,18 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('created_by');
             $table->timestamps();
-            
+
             $table->foreign('contrat_id')->references('id')->on('juridique_contrats')->onDelete('set null');
             $table->index('type_document');
             $table->index('statut');
             $table->index('date_document');
             $table->index('date_expiration');
         });
+        }
 
         // 3. Table des financements
-        Schema::create('juridique_financements', function (Blueprint $table) {
+        if (!Schema::hasTable('juridique_financements')) {
+            Schema::create('juridique_financements', function (Blueprint $table) {
             $table->id();
             $table->string('reference', 100)->unique();
             $table->string('titre', 255);
@@ -80,15 +85,17 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('created_by');
             $table->timestamps();
-            
+
             $table->foreign('contrat_id')->references('id')->on('juridique_contrats')->onDelete('set null');
             $table->index('type_financement');
             $table->index('statut');
             $table->index('date_debut');
         });
+        }
 
         // 4. Table des offres bancaires
-        Schema::create('juridique_offres_bancaires', function (Blueprint $table) {
+        if (!Schema::hasTable('juridique_offres_bancaires')) {
+            Schema::create('juridique_offres_bancaires', function (Blueprint $table) {
             $table->id();
             $table->string('reference', 100)->unique();
             $table->string('titre', 255);
@@ -107,14 +114,16 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('created_by');
             $table->timestamps();
-            
+
             $table->foreign('financement_id')->references('id')->on('juridique_financements')->onDelete('set null');
             $table->index('statut');
             $table->index('date_offre');
         });
+        }
 
         // 5. Table des échéanciers
-        Schema::create('juridique_echeanciers', function (Blueprint $table) {
+        if (!Schema::hasTable('juridique_echeanciers')) {
+            Schema::create('juridique_echeanciers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('financement_id');
             $table->unsignedBigInteger('offre_bancaire_id')->nullable();
@@ -128,7 +137,7 @@ return new class extends Migration
             $table->date('date_paiement')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('financement_id')->references('id')->on('juridique_financements')->onDelete('cascade');
             $table->foreign('offre_bancaire_id')->references('id')->on('juridique_offres_bancaires')->onDelete('set null');
             $table->index('financement_id');
@@ -136,6 +145,7 @@ return new class extends Migration
             $table->index('date_echeance');
             $table->index('statut');
         });
+        }
 
         // Insertion de données de test
         $this->insertTestData();
@@ -146,6 +156,12 @@ return new class extends Migration
      */
     private function insertTestData(): void
     {
+        // Vérifier si les données de test existent déjà
+        $existingContrat = DB::table('juridique_contrats')->where('reference', 'CONT-2026-001')->first();
+        if ($existingContrat) {
+            return; // Les données existent déjà, ne pas insérer
+        }
+
         // Créer un contrat de test
         $contratId = DB::table('juridique_contrats')->insertGetId([
             'reference' => 'CONT-2026-001',

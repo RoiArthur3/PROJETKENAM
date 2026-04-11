@@ -12,9 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vehicules', function (Blueprint $table) {
-            $table->decimal('prix_location', 10, 2)->nullable()->after('modele')->comment('Prix de location par heure/jour');
-            $table->decimal('prix_achat', 10, 2)->nullable()->after('prix_location')->comment('Coût d\'achat par heure/jour');
-            $table->string('statut')->default('actif')->after('disponible')->comment('Statut du véhicule');
+            // Ajouter la colonne prix_location si elle n'existe pas
+            if (!Schema::hasColumn('vehicules', 'prix_location')) {
+                $table->decimal('prix_location', 10, 2)->nullable()->after('modele')->comment('Prix de location par heure/jour');
+            }
+
+            // Ajouter la colonne prix_achat si elle n'existe pas
+            if (!Schema::hasColumn('vehicules', 'prix_achat')) {
+                $table->decimal('prix_achat', 10, 2)->nullable()->after('prix_location')->comment('Coût d\'achat par heure/jour');
+            }
+
+            // Ajouter la colonne statut si elle n'existe pas
+            if (!Schema::hasColumn('vehicules', 'statut')) {
+                $table->string('statut')->default('actif')->after('disponible')->comment('Statut du véhicule');
+            }
         });
     }
 
