@@ -340,19 +340,19 @@
         @endphp
         @if($hasLogistiqueGroup)
         <div class="menu-group-title">
-            <i class="fas fa-truck-loading"></i>
-            <span>Logistique</span>
+            <i class="fas fa-tools"></i>
+            <span>ATELIER</span>
         </div>
 
         @if($canAccessMaterielModule || $canAccessCostControlModule || $canShowAssurances || $canShowVisitesTechniques || $canShowListePointages)
-        <div class="menu-item has-submenu" data-tooltip="Atelier" data-module="logistique-atelier">
+        <div class="menu-item has-submenu" data-tooltip="ATELIER" data-module="logistique-atelier">
             <div class="menu-icon"><i class="fas fa-tools"></i></div>
-            <span class="menu-text">Atelier</span>
+            <span class="menu-text">ATELIER</span>
             <div class="submenu-arrow"><i class="fas fa-chevron-right"></i></div>
         </div>
         <div class="floating-submenu" id="submenu-logistique-atelier">
             <a href="{{ route('materiel.cost-control.home') }}" class="submenu-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard Atelier</span></a>
-            <a href="/fournisseurs/commandes" class="submenu-link"><i class="fas fa-shopping-cart"></i><span>Achats atelier</span></a>
+            <a href="/fournisseurs/commandes" class="submenu-link"><i class="fas fa-shopping-cart"></i><span>Achats Atelier</span></a>
             @if($canShowListePointages)
             <a href="{{ route('materiel.cost-control.engin.list') }}" class="submenu-link"><i class="fas fa-list"></i><span>Liste de Pointage</span></a>
             @endif
@@ -364,16 +364,17 @@
             @endif
             <a href="/fournisseurs/list" class="submenu-link"><i class="fas fa-truck"></i><span>Fournisseurs</span></a>
             <a href="/materiel/vehicules" class="submenu-link"><i class="fas fa-truck"></i><span>Engins</span></a>
+            <a href="/materiel/carburant" class="submenu-link"><i class="fas fa-gas-pump"></i><span>Carburant</span></a>
+            <a href="{{ route('materiel.cost-control.home') }}" class="submenu-link"><i class="fas fa-stopwatch"></i><span>Cost Control (Pointage engin)</span></a>
+            {{-- Bouton Camion Plateau supprimé --}}
             <a href="/materiel/maintenance" class="submenu-link"><i class="fas fa-wrench"></i><span>Maintenance</span></a>
             <a href="{{ route('fleet.affectations.index') }}" class="submenu-link"><i class="fas fa-user-tag"></i><span>Affectations</span></a>
             <a href="{{ route('materiel.missions.index') }}" class="submenu-link"><i class="fas fa-map-location-dot"></i><span>Liste des missions</span></a>
             <a href="{{ route('materiel.missions.create') }}" class="submenu-link"><i class="fas fa-plus-circle"></i><span>Nouvelle mission</span></a>
             <a href="{{ route('materiel.missions.export') }}" class="submenu-link"><i class="fas fa-file-export"></i><span>Exporter missions</span></a>
-            <a href="/materiel/carburant" class="submenu-link"><i class="fas fa-gas-pump"></i><span>Carburant</span></a>
-            <a href="{{ route('materiel.cost-control.home') }}" class="submenu-link"><i class="fas fa-stopwatch"></i><span>Cost Control (Pointage engin)</span></a>
-            <a href="{{ route('materiel.cost-control.plateau.list') }}" class="submenu-link"><i class="fas fa-road"></i><span>Camion Plateau</span></a>
         </div>
         @endif
+
 
         @if(auth()->user()->canAccessModule('magasin'))
         <div class="menu-item has-submenu" data-tooltip="Magasin" data-module="logistique-magasin">
@@ -428,16 +429,16 @@
         </div>
 
         @if(auth()->user()->canAccessModule('projects'))
-        <div class="menu-item has-submenu" data-tooltip="Gestion de Chantier" data-module="gestion-chantier">
+        <div class="menu-item has-submenu" data-tooltip="Gestion de Projet" data-module="gestion-projet">
             <div class="menu-icon"><i class="fas fa-hard-hat"></i></div>
-            <span class="menu-text">Chantiers</span>
+            <span class="menu-text">Projets</span>
             <div class="submenu-arrow"><i class="fas fa-chevron-right"></i></div>
         </div>
-        <div class="floating-submenu" id="submenu-gestion-chantier">
+        <div class="floating-submenu" id="submenu-gestion-projet">
             <a href="/projets/dashboard" class="submenu-link"><i class="fas fa-project-diagram"></i><span>Dashboard</span></a>
-            <a href="/projets/list" class="submenu-link"><i class="fas fa-list"></i><span>Liste des chantiers</span></a>
-            <a href="/projets/create" class="submenu-link"><i class="fas fa-plus"></i><span>Ouvrir un chantier</span></a>
-            <a href="/projets/reports" class="submenu-link"><i class="fas fa-chart-line"></i><span>Rapports chantier</span></a>
+            <a href="/projets/list" class="submenu-link"><i class="fas fa-list"></i><span>Liste des projets</span></a>
+            <a href="/projets/create" class="submenu-link"><i class="fas fa-plus"></i><span>Ouvrir un projet</span></a>
+            <a href="/projets/reports" class="submenu-link"><i class="fas fa-chart-line"></i><span>Rapports projet</span></a>
         </div>
         @endif
         @endif

@@ -16,14 +16,14 @@ class VisiteTechniqueController extends Controller
     public function index()
     {
         $visites = VisiteTechnique::with('vehicle')->latest()->paginate(20);
-        
+
         $stats = [
             'total' => VisiteTechnique::count(),
             'valides' => VisiteTechnique::where('date_expiration', '>', now())->count(),
             'a_renouveler' => VisiteTechnique::whereBetween('date_expiration', [now(), now()->addDays(30)])->count(),
             'expirees' => VisiteTechnique::where('date_expiration', '<=', now())->count(),
         ];
-        
+
         return view('materiel.visites.index', compact('visites', 'stats'));
     }
 
@@ -51,7 +51,7 @@ class VisiteTechniqueController extends Controller
         }
 
         $visite = VisiteTechnique::create($validated);
-        
+
         // Sync with vehicle table for dashboard alerts
         $visite->vehicle->update(['visite_tech_expiry' => $validated['date_expiration']]);
 
@@ -88,7 +88,7 @@ class VisiteTechniqueController extends Controller
         }
 
         $visite->update($validated);
-        
+
         // Sync with vehicle table for dashboard alerts
         $visite->vehicle->update(['visite_tech_expiry' => $validated['date_expiration']]);
 
@@ -114,15 +114,15 @@ class VisiteTechniqueController extends Controller
     {
         $vehiculesLegacy = Vehicule::query()
             ->select([
+                'id',
                 'immatriculation',
                 'marque',
                 'modele',
-                'annee',
                 'type_materiel',
                 'disponible',
-                'kilometrage',
-                'date_achat',
+                'prix_location',
                 'prix_achat',
+                'statut',
             ])
             ->whereNotNull('immatriculation')
             ->where('immatriculation', '!=', '')
@@ -138,12 +138,7 @@ class VisiteTechniqueController extends Controller
                 default => 'autre',
             };
 
-            $annee = (int) ($legacy->annee ?? 0);
-            $anneeMin = 1900;
-            $anneeMax = (int) date('Y') + 1;
-            if ($annee < $anneeMin || $annee > $anneeMax) {
-                $annee = (int) date('Y');
-            }
+            $annee = (int) date('Y');
 
             $marque = trim((string) ($legacy->marque ?? ''));
             if ($marque === '') {
@@ -164,9 +159,8 @@ class VisiteTechniqueController extends Controller
                     'type' => $mappedType,
                     'etat' => 'bon',
                     'disponibilite' => (bool) $legacy->disponible,
-                    'kilometrage' => max(0, (int) ($legacy->kilometrage ?? 0)),
-                    'date_achat' => $legacy->date_achat,
-                    'prix_achat' => $legacy->prix_achat,
+                    'kilometrage' => 0,
+                    'prix_achat' => $legacy->prix_achat ?? 0,
                     'description' => 'Synchronise automatiquement depuis la flotte materiel roulant.',
                 ]
             );

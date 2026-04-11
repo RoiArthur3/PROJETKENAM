@@ -12,6 +12,8 @@ class CommandeFournisseur extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'commande_fournisseurs';
+
     protected $fillable = [
         'reference',
         'fournisseur_id',
@@ -61,15 +63,15 @@ class CommandeFournisseur extends Model
             if (empty($commande->reference)) {
                 $commande->reference = 'CMD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
             }
-            
+
             if (empty($commande->statut)) {
                 $commande->statut = 'en_attente';
             }
-            
+
             if (empty($commande->date_commande)) {
                 $commande->date_commande = now();
             }
-            
+
             if (empty($commande->tva)) {
                 $commande->tva = 20.0; // TVA par défaut à 20%
             }
@@ -77,12 +79,12 @@ class CommandeFournisseur extends Model
 
         static::saved(function ($commande) {
             $commande->calculerMontants();
-            
+
             // Mise à jour du fournisseur
             if ($commande->fournisseur) {
                 $commande->fournisseur->touch();
             }
-            
+
             // Mise à jour du contrat
             if ($commande->contrat) {
                 $commande->contrat->touch();
@@ -95,7 +97,7 @@ class CommandeFournisseur extends Model
         $totalHT = $this->lignes->reduce(function ($carry, $ligne) {
             return $carry + ($ligne->quantite * $ligne->prix_unitaire_ht * (1 - $ligne->remise / 100));
         }, 0);
-        
+
         $this->montant_ht = $totalHT + $this->frais_livraison - $this->remise;
         $this->montant_ttc = $this->montant_ht * (1 + ($this->tva / 100));
         $this->saveQuietly();
@@ -161,9 +163,9 @@ class CommandeFournisseur extends Model
 
         $statut = $this->statut;
         $libelle = ucfirst(str_replace('_', ' ', $statut));
-        
-        return sprintf('<span class="badge badge-%s">%s</span>', 
-            $badges[$statut] ?? 'secondary', 
+
+        return sprintf('<span class="badge badge-%s">%s</span>',
+            $badges[$statut] ?? 'secondary',
             $libelle
         );
     }
@@ -173,7 +175,7 @@ class CommandeFournisseur extends Model
         if ($this->statut === 'annulee' || $this->statut === 'refusee' || $this->statut === 'livree') {
             return false;
         }
-        
+
         return $this->date_livraison_prevue && Carbon::now()->gt(Carbon::parse($this->date_livraison_prevue));
     }
 

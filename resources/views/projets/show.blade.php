@@ -18,6 +18,16 @@
             </nav>
         </div>
         <div class="d-flex gap-2">
+            @if(in_array($projet->statut ?? 'en_cours', ['en_cours', 'en_attente']))
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#prolongerProjetModal">
+                    <i class="fas fa-calendar-plus me-2"></i>Prolonger
+                </button>
+            @endif
+            @if($projet->statut == 'en_cours')
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#cloturerProjetModal">
+                    <i class="fas fa-check-circle me-2"></i>Clôturer
+                </button>
+            @endif
             <a href="{{ route('projets.edit', $projet->id ?? $id ?? 1) }}" class="btn btn-outline-warning">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
@@ -231,7 +241,7 @@
         const dateDebut = new Date(projet.dateDebut);
         const dateFin = new Date(projet.dateFin);
         const dureeTotal = Math.ceil((dateFin - dateDebut) / (1000 * 60 * 60 * 24));
-        
+
         const dureePlanification = Math.ceil(dureeTotal * 0.1);
         const dureeExecution = Math.ceil(dureeTotal * 0.7);
         const dureeClosing = Math.ceil(dureeTotal * 0.2);
@@ -315,4 +325,112 @@
         border-radius: 0.5rem;
     }
 </style>
+
+<!-- Modal Prolonger Projet -->
+<div class="modal fade" id="prolongerProjetModal" tabindex="-1" aria-labelledby="prolongerProjetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="prolongerProjetModalLabel">
+                    <i class="fas fa-calendar-plus me-2"></i>Prolonger le Projet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('projets.update-progress', $projet->id ?? $id ?? 1) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Vous pouvez prolonger la période du projet en modifiant la date de fin prévue.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nouvelle_date_fin" class="form-label">
+                            <i class="fas fa-calendar-check text-primary"></i> Nouvelle Date de Fin
+                        </label>
+                        <input type="date" class="form-control" id="nouvelle_date_fin" name="date_fin"
+                               value="{{ $projet->date_fin ?? $projet->echeance ?? '' }}" required>
+                        <small class="form-text text-muted">Sélectionnez la nouvelle date de fin du projet</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="motif_prolongation" class="form-label">
+                            <i class="fas fa-comment text-primary"></i> Motif de Prolongation
+                        </label>
+                        <textarea class="form-control" id="motif_prolongation" name="motif_prolongation" rows="3"
+                                  placeholder="Expliquez pourquoi le projet doit être prolongé..." required></textarea>
+                        <small class="form-text text-muted">Motif de la prolongation du projet</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus me-2"></i>Prolonger
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Clôturer Projet -->
+<div class="modal fade" id="cloturerProjetModal" tabindex="-1" aria-labelledby="cloturerProjetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cloturerProjetModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Clôturer le Projet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('projets.close-project', $projet->id ?? $id ?? 1) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attention :</strong> La clôture du projet le marquera comme terminé. Cette action est irréversible.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="date_fin_reelle" class="form-label">
+                            <i class="fas fa-calendar-check text-primary"></i> Date de Fin Réelle
+                        </label>
+                        <input type="date" class="form-control" id="date_fin_reelle" name="date_fin_reelle"
+                               value="{{ now()->format('Y-m-d') }}" required>
+                        <small class="form-text text-muted">Date effective de fin du projet</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rapport_cloture" class="form-label">
+                            <i class="fas fa-file-alt text-primary"></i> Rapport de Clôture
+                        </label>
+                        <textarea class="form-control" id="rapport_cloture" name="rapport_cloture" rows="4"
+                                  placeholder="Décrivez les résultats obtenus, les problèmes rencontrés, et les leçons apprises..." required></textarea>
+                        <small class="form-text text-muted">Résumé des résultats et observations finales</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="avancement_final" class="form-label">
+                            <i class="fas fa-percentage text-primary"></i> Avancement Final (%)
+                        </label>
+                        <input type="number" class="form-control" id="avancement_final" name="avancement_final"
+                               min="0" max="100" value="100" required>
+                        <small class="form-text text-muted">Pourcentage d'avancement final du projet</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle me-2"></i>Clôturer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection

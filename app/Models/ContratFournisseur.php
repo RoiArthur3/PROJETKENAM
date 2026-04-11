@@ -1,3 +1,32 @@
+    /**
+     * Crée une facture en comptabilité à la fin du contrat fournisseur (statut 'termine').
+     */
+    public function createFactureIfTerminee()
+    {
+        if ($this->statut === 'termine' && $this->date_fin && !$this->factureCreee()) {
+            \App\Models\Facture::create([
+                'numero' => 'FAC-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+                'client_id' => $this->fournisseur_id, // ou adaptez selon la structure
+                'date_facture' => now(),
+                'montant_ht' => $this->montant_ht,
+                'tva' => $this->tva,
+                'montant_ttc' => $this->montant_ttc,
+                'statut' => 'en_attente',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+        }
+    }
+
+    /**
+     * Vérifie si une facture a déjà été créée pour ce contrat (évite les doublons).
+     */
+    public function factureCreee()
+    {
+        return \App\Models\Facture::where('client_id', $this->fournisseur_id)
+            ->where('montant_ht', $this->montant_ht)
+            ->whereDate('date_facture', '>=', $this->date_fin)
+            ->exists();
+    }
 <?php
 
 namespace App\Models;
@@ -64,6 +93,8 @@ class ContratFournisseur extends Model
 
         static::saving(function ($contrat) {
             $contrat->calculerMontants();
+            // Création automatique de la facture si le contrat passe à 'termine'
+            $contrat->createFactureIfTerminee();
         });
     }
 

@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Modifier Projet')
+@section('title', 'Modifier Estimation de Cout')
 
 @section('content')
 <div class="project-edit-page">
     <div class="card border-0 shadow-sm mb-4 hero-edit">
         <div class="card-body p-4 p-lg-5 d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
-                <p class="text-uppercase small fw-bold text-primary mb-2">Edition projet</p>
-                <h1 class="h3 mb-1">Modifier le projet</h1>
+                <p class="text-uppercase small fw-bold text-primary mb-2">Edition Estimation de Cout</p>
+                <h1 class="h3 mb-1">Modifier l'estimation</h1>
                 <p class="text-muted mb-0">{{ $project->nom }}</p>
             </div>
             <div class="d-flex gap-2">
@@ -28,14 +28,14 @@
                 </div>
                 <div class="card-body px-4 pb-4">
                     <div class="mb-3">
-                        <label for="nom" class="form-label">Nom du projet <span class="text-danger">*</span></label>
+                        <label for="nom" class="form-label">Nom de l'estimation <span class="text-danger">*</span></label>
                         <input type="text" id="nom" name="nom" value="{{ old('nom', $project->nom) }}" class="form-control @error('nom') is-invalid @enderror" required>
                         @error('nom')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="type" class="form-label">Type de projet <span class="text-danger">*</span></label>
+                            <label for="type" class="form-label">Type d'estimation <span class="text-danger">*</span></label>
                             <select id="type" name="type" class="form-select @error('type') is-invalid @enderror" required>
                                 @foreach($types as $type)
                                     <option value="{{ $type }}" @selected(old('type', $project->type) === $type)>
@@ -46,7 +46,7 @@
                             @error('type')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label for="budget_estime" class="form-label">Budget estime (FCFA)</label>
+                            <label for="budget_estime" class="form-label">Cout estimé prévisionnel (FCFA)</label>
                             <input type="number" step="0.01" id="budget_estime" name="budget_estime" value="{{ old('budget_estime', $project->budget_estime) }}" class="form-control @error('budget_estime') is-invalid @enderror">
                             @error('budget_estime')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>

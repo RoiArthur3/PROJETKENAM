@@ -92,22 +92,12 @@
         }
 
         .logo {
-            width: 120px;
-            height: 120px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             margin-bottom: 30px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
         }
 
         .logo img {
-            width: 90px;
-            height: 90px;
-            object-fit: contain;
+            max-width: 200px;
+            height: auto;
         }
 
         .brand-title {
@@ -332,11 +322,6 @@
                 border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             }
 
-            .logo {
-                width: 60px;
-                height: 60px;
-            }
-
             .logo i {
                 font-size: 28px;
             }
@@ -375,11 +360,6 @@
             .left-panel {
                 min-height: 180px;
                 padding: 20px 15px;
-            }
-
-            .logo {
-                width: 50px;
-                height: 50px;
             }
 
             .logo i {
@@ -422,7 +402,7 @@
         <div class="left-panel">
             <div class="logo-container">
                 <div class="logo">
-                    <img src="{{ URL::asset('images/logo-kenam.png') }}" alt="KENAM Services" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <img src="{{ asset('images/logo-kenam.png') }}" alt="KENAM Services" onerror="console.log('Logo error - path: {{ asset('images/logo-kenam.png') }}'); this.style.display='none'; this.nextElementSibling.style.display='block';" onload="console.log('Logo loaded successfully');">
                     <i class="fas fa-building" style="display:none; font-size: 60px; color: var(--kenam-green);"></i>
                 </div>
                 <h1 class="brand-title">KENAM Services</h1>

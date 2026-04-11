@@ -15,6 +15,8 @@ class Operation extends Model
         'titre',
         'description',
         'montant',
+        'cout_estimatif',
+        'montant_facturer',
         'priorite',
         'echeance',
         'client_id',
@@ -35,6 +37,8 @@ class Operation extends Model
         'bon_pour_accord_at' => 'datetime',
         'is_paid'            => 'boolean',
         'montant'            => 'float', // Correction : stocker et manipuler le montant comme un nombre flottant (FCFA)
+        'cout_estimatif'     => 'float',
+        'montant_facturer'   => 'float',
     ];
 
     // Seuil DG (FCFA) — modifiable via config('app.seuil_dg')
@@ -43,6 +47,25 @@ class Operation extends Model
     public function services()
     {
         return $this->hasMany(OperationService::class);
+    }
+
+    /**
+     * Obtenir les véhicules associés à cette opération
+     */
+    public function vehicules()
+    {
+        return $this->belongsToMany(Vehicule::class, 'operation_vehicule')
+            ->withPivot(['date_affectation', 'date_fin_affectation', 'actif', 'notes'])
+            ->withTimestamps()
+            ->wherePivot('actif', true);
+    }
+
+    /**
+     * Obtenir les affectations de véhicules
+     */
+    public function operationVehicules()
+    {
+        return $this->hasMany(OperationVehicule::class);
     }
 
     // Méthode pour obtenir les noms des services

@@ -306,8 +306,191 @@ class ProjetsDashboardController extends Controller
     public function create()
     {
         $clients = Client::orderBy('raison_sociale')->get();
+        $users = \App\Models\User::where('is_active', true)->orderBy('name')->get();
+        $vehicules = \App\Models\Vehicule::where('disponible', true)->get();
 
-        return view('projets.create', compact('clients'));
+        return view('projets.create', compact('clients', 'users', 'vehicules'));
+    }
+
+    /**
+     * API: Obtenir les engins associés à un projet
+     */
+    public function getEnginsByProjet($projetId)
+    {
+        try {
+            $projet = Operation::findOrFail($projetId);
+
+            // Récupérer les véhicules associés au projet
+            $engins = $projet->vehicules()->get()->map(function ($vehicule) {
+                return [
+                    'id' => $vehicule->id,
+                    'immatriculation' => $vehicule->immatriculation,
+                    'marque' => $vehicule->marque,
+                    'modele' => $vehicule->modele,
+                    'type_materiel' => $vehicule->type_materiel,
+                    'prix_location' => $vehicule->prix_location ?? 0,
+                    'prix_achat' => $vehicule->prix_achat ?? 0,
+                    'disponible' => $vehicule->disponible,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'engins' => $engins,
+                'projet' => [
+                    'id' => $projet->id,
+                    'titre' => $projet->titre,
+                    'client' => $projet->client ? $projet->client->raison_sociale : 'N/A',
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des engins: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Afficher le rapport financier d'un projet
+     */
+    public function rapportFinancier($projetId)
+    {
+        $projet = Operation::with(['client', 'user', 'vehicules'])->findOrFail($projetId);
+        return view('projets.rapport-financier', compact('projet'));
+    }
+
+    /**
+     * API: Obtenir les données du rapport financier
+     */
+    public function rapportFinancierData($projetId, Request $request)
+    {
+        try {
+            $projet = Operation::findOrFail($projetId);
+
+            // Récupérer les pointages associés aux véhicules du projet
+            $vehiculeIds = $projet->vehicules()->pluck('vehicules.id');
+
+            $pointagesQuery = \App\Models\Pointage::with(['vehicle'])
+                ->whereIn('vehicle_id', $vehiculeIds)
+                ->where('statut', 'validé');
+
+            // Appliquer les filtres
+            if ($request->filled('date_debut')) {
+                $pointagesQuery->whereDate('date_pointage', '>=', $request->date_debut);
+            }
+            if ($request->filled('date_fin')) {
+                $pointagesQuery->whereDate('date_pointage', '<=', $request->date_fin);
+            }
+            if ($request->filled('engin_id')) {
+                $pointagesQuery->where('vehicle_id', $request->engin_id);
+            }
+            if ($request->filled('type_pointage')) {
+                $pointagesQuery->where('unit_type', $request->type_pointage);
+            }
+
+            $pointages = $pointagesQuery->orderByDesc('date_pointage')->get();
+
+            // Calculer les totaux
+            $totaux = [
+                'total_unites' => $pointages->sum('quantity'),
+                'total_fournisseur' => $pointages->sum('total_supplier_cost'),
+                'total_client' => $pointages->sum('total_client_amount'),
+                'total_marge' => $pointages->sum(function($p) {
+                    return ($p->total_client_amount ?? 0) - ($p->total_supplier_cost ?? 0);
+                }),
+            ];
+
+            // Formatter les pointages pour l'affichage
+            $pointagesFormates = $pointages->map(function($pointage) {
+                return [
+                    'id' => $pointage->id,
+                    'date_pointage' => $pointage->date_pointage,
+                    'vehicule' => $pointage->vehicle,
+                    'unit_type' => $pointage->unit_type,
+                    'quantity' => $pointage->quantity,
+                    'supplier_unit_cost' => $pointage->supplier_unit_cost,
+                    'client_unit_price' => $pointage->client_unit_price,
+                    'total_supplier_cost' => $pointage->total_supplier_cost,
+                    'total_client_amount' => $pointage->total_client_amount,
+                    'marge' => ($pointage->total_client_amount ?? 0) - ($pointage->total_supplier_cost ?? 0),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'pointages' => $pointagesFormates,
+                'totaux' => $totaux,
+                'projet' => [
+                    'id' => $projet->id,
+                    'titre' => $projet->titre,
+                    'cout_estimatif' => $projet->cout_estimatif,
+                    'montant_facturer' => $projet->montant_facturer,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des données: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Générer la facture PDF
+     */
+    public function genererFacture($projetId, Request $request)
+    {
+        try {
+            $projet = Operation::findOrFail($projetId);
+
+            // Récupérer les données des pointages avec les mêmes filtres que le rapport financier
+            $vehiculeIds = $projet->vehicules()->pluck('vehicules.id');
+
+            $pointagesQuery = \App\Models\Pointage::with(['vehicle'])
+                ->whereIn('vehicle_id', $vehiculeIds)
+                ->where('statut', 'validé');
+
+            // Appliquer les filtres
+            if ($request->filled('date_debut')) {
+                $pointagesQuery->whereDate('date_pointage', '>=', $request->date_debut);
+            }
+            if ($request->filled('date_fin')) {
+                $pointagesQuery->whereDate('date_pointage', '<=', $request->date_fin);
+            }
+            if ($request->filled('engin_id')) {
+                $pointagesQuery->where('vehicle_id', $request->engin_id);
+            }
+            if ($request->filled('type_pointage')) {
+                $pointagesQuery->where('unit_type', $request->type_pointage);
+            }
+
+            $pointages = $pointagesQuery->orderBy('date_pointage')->get();
+
+            // Calculer les totaux
+            $totaux = [
+                'total_unites' => $pointages->sum('quantity'),
+                'total_fournisseur' => $pointages->sum('total_supplier_cost'),
+                'total_client' => $pointages->sum('total_client_amount'),
+                'total_marge' => $pointages->sum(function($p) {
+                    return ($p->total_client_amount ?? 0) - ($p->total_supplier_cost ?? 0);
+                }),
+            ];
+
+            // Générer le PDF
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('projets.facture-pdf', compact('projet', 'pointages', 'totaux'));
+
+            // Format A4 en portrait
+            $pdf->setPaper('A4', 'portrait');
+
+            // Nom du fichier
+            $filename = 'facture_' . str_replace(' ', '_', $projet->titre) . '_' . date('Y-m-d') . '.pdf';
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Erreur lors de la génération de la facture: ' . $e->getMessage());
+        }
     }
 
     /**

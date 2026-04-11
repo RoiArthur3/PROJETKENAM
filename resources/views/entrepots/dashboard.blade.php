@@ -73,6 +73,24 @@
 @section('content')
 <x-dashboard-layout title="Dashboard Entrepôts" icon="fa-warehouse" subtitle="Gestion des stocks et entrepôts">
 
+    <!-- Actions Header -->
+    <x-slot name="headerActions">
+        <div class="d-flex gap-2">
+            <a href="{{ route('entrepots.list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-2"></i>Liste des Entrepôts
+            </a>
+            <a href="{{ route('entrepots.stock') }}" class="btn btn-outline-primary">
+                <i class="fas fa-boxes me-2"></i>Gestion des Stocks
+            </a>
+            <a href="{{ route('entrepots.transferts') }}" class="btn btn-outline-info">
+                <i class="fas fa-exchange-alt me-2"></i>Transferts
+            </a>
+            <a href="{{ route('entrepots.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Créer un Entrepôt
+            </a>
+        </div>
+    </x-slot>
+
     <!-- KPIs Principaux -->
     <x-slot name="kpis">
         <x-kpi-card

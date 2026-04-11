@@ -64,4 +64,23 @@ class Vehicule extends Model
     {
         return $this->belongsTo(Fournisseur::class);
     }
+
+    /**
+     * Obtenir les opérations associées à ce véhicule
+     */
+    public function operations()
+    {
+        return $this->belongsToMany(Operation::class, 'operation_vehicule')
+            ->withPivot(['date_affectation', 'date_fin_affectation', 'actif', 'notes'])
+            ->withTimestamps()
+            ->wherePivot('actif', true);
+    }
+
+    /**
+     * Obtenir les affectations de ce véhicule
+     */
+    public function operationVehicules()
+    {
+        return $this->hasMany(OperationVehicule::class);
+    }
 }

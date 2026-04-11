@@ -12,12 +12,22 @@ class Pointage extends Model
         'user_id',
         'personnel_id',
         'vehicle_assignment_id',
+        'vehicle_id',
         'operation_id',
         'type', // 'depart', 'arrivee', 'pause', 'reprise'
         'date_pointage',
         'heure_pointage',
         'heure_arrivee',
         'heure_depart',
+        'unit_type',
+        'quantity',
+        'supplier_unit_cost',
+        'client_unit_price',
+        'total_supplier_cost',
+        'total_client_amount',
+        'submodule',
+        'billing_mode',
+        'created_by',
         'latitude',
         'longitude',
         'location_address',
@@ -35,12 +45,25 @@ class Pointage extends Model
     protected $casts = [
         'date_pointage' => 'date',
         'heure_pointage' => 'datetime',
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
+        'quantity' => 'float',
+        'supplier_unit_cost' => 'float',
+        'client_unit_price' => 'float',
+        'total_supplier_cost' => 'float',
+        'total_client_amount' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'kilometrage' => 'integer',
-        'niveau_carburant' => 'decimal:2',
+        'niveau_carburant' => 'float',
         'validated_at' => 'datetime',
     ];
+
+    /**
+     * Relation avec le véhicule
+     */
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicule::class);
+    }
 
     /**
      * Relation avec l'utilisateur (chauffeur)

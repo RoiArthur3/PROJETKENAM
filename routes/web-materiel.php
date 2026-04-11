@@ -26,10 +26,10 @@ Route::middleware(['auth'])->prefix('materiel')->name('materiel.')->group(functi
     Route::get('/vehicules', [VehiculeController::class, 'index'])->name('vehicules');
     Route::get('/vehicules/create', [VehiculeController::class, 'create'])->name('vehicules.create');
     Route::post('/vehicules', [VehiculeController::class, 'store'])->name('vehicules.store');
-    Route::get('/vehicules/{vehicule}', [VehiculeController::class, 'show'])->name('vehicules.show');
-    Route::get('/vehicules/{vehicule}/edit', [VehiculeController::class, 'edit'])->name('vehicules.edit');
-    Route::put('/vehicules/{vehicule}', [VehiculeController::class, 'update'])->name('vehicules.update');
-    Route::delete('/vehicules/{vehicule}', [VehiculeController::class, 'destroy'])->name('vehicules.destroy');
+    Route::get('/vehicules/{id}', [VehiculeController::class, 'show'])->name('vehicules.show');
+    Route::get('/vehicules/{id}/edit', [VehiculeController::class, 'edit'])->name('vehicules.edit');
+    Route::put('/vehicules/{id}', [VehiculeController::class, 'update'])->name('vehicules.update');
+    Route::delete('/vehicules/{id}', [VehiculeController::class, 'destroy'])->name('vehicules.destroy');
 
     // Missions
     Route::get('/missions', [\App\Http\Controllers\VehicleMissionController::class, 'index'])->name('missions.index');
@@ -45,13 +45,13 @@ Route::middleware(['auth'])->prefix('materiel')->name('materiel.')->group(functi
     // MODULE COST CONTROL - REFONTE COMPLÈTE
     // ════════════════════════════════════════════════════════════════════════════
     Route::prefix('cost-control')->group(function () {
-        
+
         // Dashboard principal
         Route::get('/', [CostControlDashboardController::class, 'home']);
         Route::get('/home', [CostControlDashboardController::class, 'home']);
         // Alias legacy: certaines URLs en prod pointent vers /materiel/cost-control/pointages/create
         Route::get('/pointages/create', [VehicleCostControlController::class, 'createEnginPointage'])->name('cost-control.pointages.create');
-        
+
         // Groupe avec namespacing explicite pour les sous-modules
         Route::prefix('engin')->name('cost-control.engin.')->group(function () {
             Route::get('/dashboard', [VehicleCostControlController::class, 'listStandard'])->name('dashboard');
@@ -75,7 +75,7 @@ Route::middleware(['auth'])->prefix('materiel')->name('materiel.')->group(functi
         Route::prefix('plateau')->name('cost-control.plateau.')->group(function () {
             Route::get('/dashboard', [VehicleCostControlController::class, 'listCamionPlateau'])->name('dashboard');
             Route::get('/list', [VehicleCostControlController::class, 'listCamionPlateau'])->name('list');
-            
+
             // Pointage classique
             Route::get('/pointages/create', [VehicleCostControlController::class, 'create'])->name('pointages.create');
             Route::post('/pointages', [VehicleCostControlController::class, 'store'])->name('pointages.store');
@@ -188,7 +188,7 @@ Route::middleware(['auth'])->prefix('materiel')->name('materiel.')->group(functi
         Route::put('/{assurance}', [\App\Http\Controllers\Materiel\AssuranceController::class, 'update'])->name('update');
         Route::delete('/{assurance}', [\App\Http\Controllers\Materiel\AssuranceController::class, 'destroy'])->name('destroy');
     });
-    
+
     // Visites Techniques
     Route::prefix('visites')->name('visites.')->group(function () {
         Route::get('/', [VisiteTechniqueController::class, 'index'])->name('index');

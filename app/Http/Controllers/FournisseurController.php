@@ -50,40 +50,38 @@ class FournisseurController extends Controller
 
         // Statistiques sur les engins et mouvements
         $enginsStats = [
-            'total_engins' => DB::table('commandes_fournisseurs')
+            'total_engins' => DB::table('commande_fournisseurs')
                 ->whereNotNull('engin_id')
                 ->distinct('engin_id')
                 ->count(),
-            'engins_disponibles' => DB::table('commandes_fournisseurs')
+            'engins_disponibles' => DB::table('commande_fournisseurs')
                 ->whereNotNull('engin_id')
-                ->where('statut', '!=', 'en_panne')
+                ->where('engin_statut', '!=', 'en_panne')
                 ->distinct('engin_id')
                 ->count(),
-            'engins_en_panne' => DB::table('commandes_fournisseurs')
+            'engins_en_panne' => DB::table('commande_fournisseurs')
                 ->whereNotNull('engin_id')
-                ->where('statut', 'en_panne')
+                ->where('engin_statut', 'en_panne')
                 ->distinct('engin_id')
                 ->count(),
         ];
 
-        // Mouvements des prestations (payées et non payées)
-        $prestationsPayees = DB::table('commandes_fournisseurs')
-            ->whereNotNull('prestation_id')
+        // Mouvements des commandes (payées et non payées)
+        $commandesPayees = DB::table('commande_fournisseurs')
             ->where('statut', 'payee')
             ->count();
 
-        $prestationsNonPayees = DB::table('commandes_fournisseurs')
-            ->whereNotNull('prestation_id')
+        $commandesNonPayees = DB::table('commande_fournisseurs')
             ->where('statut', '!=', 'payee')
             ->whereIn('statut', ['en_attente', 'en_cours', 'livree'])
             ->count();
 
         $mouvementsStats = [
-            'prestations_payees' => $prestationsPayees,
-            'prestations_non_payees' => $prestationsNonPayees,
-            'total_prestations' => $prestationsPayees + $prestationsNonPayees,
-            'taux_paiement' => $prestationsNonPayees > 0 ?
-                round(($prestationsPayees / ($prestationsPayees + $prestationsNonPayees)) * 100, 2) : 100,
+            'commandes_payees' => $commandesPayees,
+            'commandes_non_payees' => $commandesNonPayees,
+            'total_commandes' => $commandesPayees + $commandesNonPayees,
+            'taux_paiement' => $commandesNonPayees > 0 ?
+                round(($commandesPayees / ($commandesPayees + $commandesNonPayees)) * 100, 2) : 0,
         ];
 
         // Derniers fournisseurs ajoutés

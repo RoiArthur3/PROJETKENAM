@@ -16,7 +16,9 @@ Route::prefix('projets')->name('projets.')->middleware(['auth'])->group(function
     Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');
     Route::post('/{project}/validate-project', [ProjectController::class, 'validateProject'])->name('validateProject');
     Route::post('/{project}/start-project', [ProjectController::class, 'startProject'])->name('startProject');
-    Route::post('/{project}/close-project', [ProjectController::class, 'closeProject'])->name('closeProject');
     Route::post('/{project}/archive-project', [ProjectController::class, 'archiveProject'])->name('archiveProject');
     Route::post('/{project}/update-progress', [ProjectController::class, 'updateProgress'])->name('updateProgress');
+    Route::post('/{project}/prolonger-projet', [ProjectController::class, 'prolongerProjet'])->name('prolongerProjet');
+    Route::post('/{project}/close-project', [ProjectController::class, 'closeProject'])->name('closeProject');
+    Route::get('/{project}/pointage-report', [ProjectController::class, 'pointageReport'])->name('pointage_report');
 });

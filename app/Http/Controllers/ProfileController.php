@@ -21,23 +21,10 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        $personnel = Personnel::query()
-            ->where('user_id', $user->id)
-            ->first();
-
-        $lastPaie = null;
-        if ($personnel) {
-            $lastPaie = DB::table('personnel_paies')
-                ->where('personnel_id', $personnel->id)
-                ->orderByDesc('periode')
-                ->orderByDesc('id')
-                ->first();
-        }
-
         return view('profile.dashboard', [
             'user' => $user,
-            'personnel' => $personnel,
-            'lastPaie' => $lastPaie,
+            'personnel' => null, // Les users ne sont pas du personnel RH
+            'lastPaie' => null, // Pas de paie pour les users
             'shortcuts' => $this->buildAccessShortcuts($user),
         ]);
     }
@@ -51,18 +38,16 @@ class ProfileController extends Controller
             'photo_profil' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $personnel = Personnel::query()->where('user_id', $request->user()->id)->first();
-        if (!$personnel) {
-            return Redirect::route('profile.dashboard')
-                ->with('error', 'Aucun dossier employe lie a ce compte.');
+        $user = $request->user();
+
+        // Pour les users, on stocke la photo dans la table users
+        // Ajouter une colonne photo_profil à la table users si nécessaire
+        if ($user->photo_profil) {
+            Storage::disk('public')->delete($user->photo_profil);
         }
 
-        if ($personnel->photo_profil) {
-            Storage::disk('public')->delete($personnel->photo_profil);
-        }
-
-        $photoPath = $request->file('photo_profil')->store('personnel/photos', 'public');
-        $personnel->update(['photo_profil' => $photoPath]);
+        $photoPath = $request->file('photo_profil')->store('users/photos', 'public');
+        $user->update(['photo_profil' => $photoPath]);
 
         return Redirect::route('profile.dashboard')->with('success', 'Photo de profil mise a jour.');
     }
@@ -77,6 +62,8 @@ class ProfileController extends Controller
             ['module' => 'hr', 'label' => 'Ressources Humaines', 'icon' => 'fas fa-users', 'url' => '/rh/dashboard'],
             ['module' => 'materiel', 'label' => 'Materiel', 'icon' => 'fas fa-truck', 'url' => '/materiel/cost-control'],
             ['module' => 'warehouse', 'label' => 'Stock', 'icon' => 'fas fa-boxes', 'url' => '/warehouse/dashboard'],
+            ['module' => 'magasin', 'label' => 'Magasin', 'icon' => 'fas fa-store', 'url' => '/magasin'],
+            ['module' => 'entrepot', 'label' => 'Entrepot', 'icon' => 'fas fa-warehouse', 'url' => '/entrepot'],
             ['module' => 'commercial', 'label' => 'Commercial', 'icon' => 'fas fa-chart-line', 'url' => '/commercial/dashboard'],
             ['module' => 'fournisseurs', 'label' => 'Fournisseurs', 'icon' => 'fas fa-handshake', 'url' => '/fournisseurs/dashboard'],
             ['module' => 'projects', 'label' => 'Projets', 'icon' => 'fas fa-project-diagram', 'url' => '/projets/dashboard'],

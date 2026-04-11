@@ -233,13 +233,13 @@ Route::middleware(['auth'])->group(function () {
         // Configuration Hikvision
         Route::get('/hikvision/config', [ParametrageController::class, 'hikvisionConfig'])->name('hikvision.config');
         Route::post('/hikvision/config', [ParametrageController::class, 'saveHikvisionConfig'])->name('hikvision.save');
-        
+
         // Routes Hikvision (Paramétrage et Diagnostic)
         Route::get('/hikvision/test', [App\Http\Controllers\ParametrageController::class, 'testHikvision'])->name('hikvision.test');
         Route::get('/hikvision/diagnostic', [App\Http\Controllers\ParametrageController::class, 'hikvisionDiagnostic'])->name('hikvision.diagnostic');
         Route::get('/hikvision/diagnostic/run', [App\Http\Controllers\ParametrageController::class, 'runHikvisionDiagnostic'])->name('hikvision.diagnostic.run');
-        Route::post('/hikvision/save', [App\Http\Controllers\ParametrageController::class, 'saveHikvisionConfig'])->name('hikvision.save');
-        
+        // Route supprimée : doublon de 'hikvision.save'
+
         // Route pour la synchronisation manuelle
         Route::post('/hikvision/sync', [App\Http\Controllers\ParametrageController::class, 'hikvisionSync'])->name('hikvision.sync');
     });

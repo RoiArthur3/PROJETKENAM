@@ -28,5 +28,13 @@ Route::prefix('projets')->name('projets.')->group(function () {
     Route::get('/cloture', [ProjetsDashboardController::class, 'cloture'])->name('cloture');
     Route::get('/{projet}/cloture', [ProjetsDashboardController::class, 'clotureProjet'])->name('cloture.projet');
     Route::get('/rapports', [ProjetsDashboardController::class, 'reports'])->name('rapports');
+    Route::get('/{projet}/rapport-financier', [ProjetsDashboardController::class, 'rapportFinancier'])->name('rapport-financier');
+    Route::get('/{projet}/rapport-financier/facture', [ProjetsDashboardController::class, 'genererFacture'])->name('rapport-financier.facture');
+
+    // API routes
+    Route::prefix('api')->group(function () {
+        Route::get('/{projet}/engins', [ProjetsDashboardController::class, 'getEnginsByProjet'])->name('api.engins');
+        Route::get('/{projet}/rapport-financier/data', [ProjetsDashboardController::class, 'rapportFinancierData'])->name('api.rapport-financier.data');
+    });
 
 });

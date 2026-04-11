@@ -74,7 +74,7 @@ class VehiculeController extends Controller
         Vehicule::create($validated);
 
         return redirect()
-            ->route('fleet.vehicules')
+            ->route('materiel.vehicules')
             ->with('success', 'Véhicule créé avec succès')
             ->withInput(); // Conserver les filtres actuels
     }
@@ -82,25 +82,27 @@ class VehiculeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Vehicule $vehicule)
+    public function show($id)
     {
-        return view('vehicules.show', compact('vehicule'));
+        $vehicule = Vehicule::findOrFail($id);
+        return view('materiel.vehicules-show', compact('vehicule'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Vehicule $vehicule)
+    public function edit($id)
     {
-        $fournisseurs = Fournisseur::orderBy('raison_sociale')->get();
-        return view('vehicules.edit', compact('vehicule', 'fournisseurs'));
+        $vehicule = Vehicule::findOrFail($id);
+        return view('materiel.vehicules-edit', compact('vehicule'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Vehicule $vehicule)
+    public function update(Request $request, $id)
     {
+        $vehicule = Vehicule::findOrFail($id);
         $rules = Vehicule::rules();
         $rules['immatriculation'] = 'required|string|max:20|unique:vehicules,immatriculation,' . $vehicule->id;
 
@@ -109,7 +111,7 @@ class VehiculeController extends Controller
         $vehicule->update($validated);
 
         return redirect()
-            ->route('fleet.vehicules')
+            ->route('materiel.vehicules')
             ->with('success', 'Véhicule mis à jour avec succès')
             ->withInput(); // Conserver les filtres actuels
     }
@@ -117,12 +119,13 @@ class VehiculeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Vehicule $vehicule)
+    public function destroy($id)
     {
+        $vehicule = Vehicule::findOrFail($id);
         $vehicule->delete();
 
         return redirect()
-            ->route('fleet.vehicules')
+            ->route('materiel.vehicules')
             ->with('success', 'Véhicule supprimé avec succès')
             ->withInput(); // Conserver les filtres actuels
     }

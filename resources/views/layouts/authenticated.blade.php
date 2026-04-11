@@ -266,18 +266,6 @@
             <div class="nav-section">
                 <div class="nav-section-title">Logistique & Stocks</div>
 
-                @if(auth()->user()->canAccessModule('warehouse'))
-                    <a href="{{ url('/stock') }}" class="nav-link {{ request()->is('stock*') ? 'active' : '' }}">
-                        <i class="fas fa-warehouse"></i>
-                        Stock & Entrepôt
-                    </a>
-                @else
-                    <div class="nav-link disabled">
-                        <i class="fas fa-warehouse"></i>
-                        Stock & Entrepôt
-                        <span class="permission-badge">Non autorisé</span>
-                    </div>
-                @endif
 
                 @if(auth()->user()->canAccessModule('fleet'))
                     <a href="{{ url('/fleet') }}" class="nav-link {{ request()->is('fleet*') ? 'active' : '' }}">
@@ -353,19 +341,6 @@
                     </div>
                 @endif
 
-                <!-- Fournisseurs -->
-                @if(auth()->user()->canAccessModule('suppliers'))
-                    <a href="{{ url('/fournisseurs') }}" class="nav-link {{ request()->is('fournisseurs*') ? 'active' : '' }}">
-                        <i class="fas fa-truck"></i>
-                        Fournisseurs
-                    </a>
-                @else
-                    <div class="nav-link disabled">
-                        <i class="fas fa-truck"></i>
-                        Fournisseurs
-                        <span class="permission-badge">Non autorisé</span>
-                    </div>
-                @endif
 
                 <!-- Comptabilité -->
                 @if(auth()->user()->canAccessModule('accounting'))
@@ -381,6 +356,137 @@
                     </div>
                 @endif
 
+            </div>
+
+            <!-- Fournisseurs -->
+            <div class="nav-section">
+                <div class="nav-section-title">Fournisseurs</div>
+
+                <!-- Création -->
+                @if(auth()->user()->canAccessModule('fournisseurs'))
+                    <div class="nav-link nav-link-parent">
+                        <i class="fas fa-plus-circle"></i>
+                        Création
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </div>
+                    <div style="padding-left: 1.5rem;">
+                        <a href="{{ url('/fournisseurs/create-engins') }}" class="nav-link {{ request()->is('fournisseurs/create-engins*') ? 'active' : '' }}">
+                            <i class="fas fa-cogs"></i> Nouveau Fournisseur ENGIN
+                        </a>
+                        <a href="{{ url('/fournisseurs/create') }}" class="nav-link {{ request()->is('fournisseurs/create*') ? 'active' : '' }}">
+                            <i class="fas fa-box"></i> Nouveau Fournisseur MATÉRIEL
+                        </a>
+                    </div>
+                @else
+                    <div class="nav-link disabled">
+                        <i class="fas fa-plus-circle"></i>
+                        Création
+                        <span class="permission-badge">Non autorisé</span>
+                    </div>
+                @endif
+
+                <!-- Fournisseurs Engin -->
+                @if(auth()->user()->canAccessModule('fournisseurs'))
+                    <div class="nav-link nav-link-parent {{ request()->is('fournisseurs/engins/*') ? 'active' : '' }}">
+                        <i class="fas fa-truck"></i>
+                        Fournisseurs ENGIN
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </div>
+                    <div style="padding-left: 1.5rem;">
+                        <a href="{{ url('/fournisseurs/engins/kenam') }}" class="nav-link {{ request()->is('fournisseurs/engins/kenam*') ? 'active' : '' }}">
+                            <i class="fas fa-building"></i> Fournisseurs Internes
+                        </a>
+                        <a href="{{ url('/fournisseurs/engins/list') }}" class="nav-link {{ request()->is('fournisseurs/engins/list*') ? 'active' : '' }}">
+                            <i class="fas fa-truck"></i> Fournisseurs Externes
+                        </a>
+                    </div>
+                @else
+                    <div class="nav-link disabled">
+                        <i class="fas fa-truck"></i>
+                        Fournisseurs ENGIN
+                        <span class="permission-badge">Non autorisé</span>
+                    </div>
+                @endif
+
+                <!-- Fournisseurs Matériel -->
+                @if(auth()->user()->canAccessModule('fournisseurs'))
+                    <div class="nav-link nav-link-parent {{ request()->is('fournisseurs/magasin*') || request()->is('fournisseurs/entrepots*') ? 'active' : '' }}">
+                        <i class="fas fa-box"></i>
+                        Fournisseurs MATÉRIEL
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </div>
+                    <div style="padding-left: 1.5rem;">
+                        <a href="{{ url('/fournisseurs/entrepots') }}" class="nav-link {{ request()->is('fournisseurs/entrepots*') ? 'active' : '' }}">
+                            <i class="fas fa-warehouse"></i> Fournisseurs Entrepôts
+                        </a>
+                        <a href="{{ url('/fournisseurs/magasin') }}" class="nav-link {{ request()->is('fournisseurs/magasin*') ? 'active' : '' }}">
+                            <i class="fas fa-store"></i> Fournisseurs Magasin
+                        </a>
+                    </div>
+                @else
+                    <div class="nav-link disabled">
+                        <i class="fas fa-box"></i>
+                        Fournisseurs MATÉRIEL
+                        <span class="permission-badge">Non autorisé</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Stock & Magasins -->
+            <div class="nav-section">
+                <div class="nav-section-title">Stock & Magasins</div>
+
+                <!-- Gestion des Stocks -->
+                @if(auth()->user()->canAccessModule('magasin'))
+                    <div class="nav-link nav-link-parent {{ request()->is('magasin*') || request()->is('entrepot*') ? 'active' : '' }}">
+                        <i class="fas fa-boxes"></i>
+                        Gestion des Stocks
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </div>
+                    <div style="padding-left: 1.5rem;">
+                        <a href="{{ url('/magasin') }}" class="nav-link {{ request()->is('magasin*') ? 'active' : '' }}">
+                            <i class="fas fa-store"></i> Magasin
+                        </a>
+                        <a href="{{ url('/entrepot') }}" class="nav-link {{ request()->is('entrepot*') ? 'active' : '' }}">
+                            <i class="fas fa-warehouse"></i> Entrepôts
+                        </a>
+                    </div>
+                @else
+                    <div class="nav-link disabled">
+                        <i class="fas fa-boxes"></i>
+                        Gestion des Stocks
+                        <span class="permission-badge">Non autorisé</span>
+                    </div>
+                @endif
+
+                <!-- Opérations Stock -->
+                @if(auth()->user()->canAccessModule('magasin'))
+                    <div class="nav-link nav-link-parent">
+                        <i class="fas fa-exchange-alt"></i>
+                        Opérations Stock
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </div>
+                    <div style="padding-left: 1.5rem;">
+                        <a href="{{ url('/magasin/entrees') }}" class="nav-link">
+                            <i class="fas fa-sign-in-alt"></i> Entrées Stock
+                        </a>
+                        <a href="{{ url('/magasin/sorties') }}" class="nav-link">
+                            <i class="fas fa-sign-out-alt"></i> Sorties Stock
+                        </a>
+                        <a href="{{ url('/magasin/inventaire') }}" class="nav-link">
+                            <i class="fas fa-clipboard-list"></i> Inventaire
+                        </a>
+                        <a href="{{ url('/magasin/rapports') }}" class="nav-link">
+                            <i class="fas fa-chart-line"></i> Rapports Stock
+                        </a>
+                    </div>
+                @else
+                    <div class="nav-link disabled">
+                        <i class="fas fa-exchange-alt"></i>
+                        Opérations Stock
+                        <span class="permission-badge">Non autorisé</span>
+                    </div>
+                @endif
             </div>
 
             <!-- Support & Analyse -->

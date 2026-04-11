@@ -30,9 +30,9 @@ class AuthService
             $phone = '0' . substr($phone, 3);
         }
 
-        // Si le numéro commence par +225, le remplacer par 0
-        if (str_starts_with($phone, '+225')) {
-            $phone = '0' . substr($phone, 4);
+        // Si le numéro commence par +225, le remplacer par 0 (après suppression des non-numériques)
+        if (strlen($phone) === 12 && str_starts_with($phone, '225')) {
+            $phone = '0' . substr($phone, 3);
         }
 
         // Si le numéro a 9 chiffres (sans le 0 initial), ajouter le 0
@@ -40,9 +40,13 @@ class AuthService
             $phone = '0' . $phone;
         }
 
-        // Conserver uniquement le format local strict attendu (10 chiffres commençant par 0)
-        if (!preg_match('/^0[0-9]{9}$/', $phone)) {
-            return $phone;
+        // Si le numéro a plus de 10 chiffres, garder les 10 derniers
+        if (strlen($phone) > 10) {
+            $phone = substr($phone, -10);
+            // S'assurer qu'il commence par 0
+            if (!str_starts_with($phone, '0')) {
+                $phone = '0' . substr($phone, 1);
+            }
         }
 
         return $phone;

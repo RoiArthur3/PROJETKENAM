@@ -108,7 +108,15 @@
             @endif
         </div>
 
-        <!-- 2. SUIVI ET VALIDATIONS -->
+        <!-- 2. NOUVELLE DEMANDE -->
+        <a href="{{ route('operations.create') }}" class="menu-item" data-tooltip="Nouvelle demande">
+            <div class="menu-icon">
+                <i class="fas fa-cogs text-success"></i>
+            </div>
+            <span class="menu-text">Nouvelle demande</span>
+        </a>
+
+        <!-- 3. SUIVI ET VALIDATIONS -->
         <div class="menu-item has-submenu" data-tooltip="Suivi et validations" data-module="validations">
             <div class="menu-icon"><i class="fas fa-tasks"></i></div>
             <span class="menu-text">Suivi et validations</span>
@@ -186,21 +194,10 @@
             <a href="{{ route('materiel.cost-control.home') }}" class="submenu-link"><i class="fas fa-tachometer-alt text-primary"></i><span>Dashboard Cost Control</span></a>
             <a href="{{ route('materiel.cost-control.engin.pointages.create') }}" class="submenu-link"><i class="fas fa-plus text-success"></i><span>Nouveau pointage engin</span></a>
             <a href="{{ route('materiel.cost-control.engin.list') }}" class="submenu-link"><i class="fas fa-list text-info"></i><span>Liste des pointages engins</span></a>
-            <a href="{{ route('materiel.cost-control.plateau.list') }}" class="submenu-link"><i class="fas fa-road text-warning"></i><span>Camion Plateau</span></a>
+            {{-- Sous-module Camion Plateau supprimé --}}
         </div>
 
-        <!-- 5. NOUVELLE DEMANDE -->
-        <div class="menu-item has-submenu" data-tooltip="Nouvelle Demande" data-module="operations">
-            <div class="menu-icon"><i class="fas fa-cogs"></i></div>
-            <span class="menu-text">Nouvelle Demande</span>
-            <div class="submenu-arrow"><i class="fas fa-chevron-right"></i></div>
-        </div>
-        <div class="floating-submenu" id="submenu-operations">
-            <a href="{{ route('operations.index') }}" class="submenu-link"><i class="fas fa-list text-info"></i><span>Liste Opérations</span></a>
-            <a href="{{ route('operations.create') }}" class="submenu-link"><i class="fas fa-plus text-success"></i><span>Nouvelle Opération</span></a>
-            <a href="/validations/pending" class="submenu-link"><i class="fas fa-clock text-warning"></i><span>En attente</span></a>
-            <a href="{{ route('validations.paid') }}" class="submenu-link"><i class="fas fa-coins text-success"></i><span>Payées</span></a>
-        </div>
+        <!-- 5. NOUVELLE DEMANDE (déplacé dans Suivi et validations) -->
 
         <!-- 6. COMMERCIAL -->
         @if(auth()->user()->canAccessModule('commercial'))
@@ -247,11 +244,49 @@
             <div class="floating-submenu" id="submenu-achat">
             <a href="{{ route('achat.index') }}" class="submenu-link"><i class="fas fa-tachometer-alt text-primary"></i><span>Liste des achats</span></a>
             <a href="{{ route('achat.create') }}" class="submenu-link"><i class="fas fa-plus text-success"></i><span>Nouvel achat</span></a>
-            <a href="/fournisseurs/list" class="submenu-link"><i class="fas fa-industry text-secondary"></i><span>Fournisseurs</span></a>
         </div>
         @endif
 
-        <!-- 7. LOGISTIQUE -->
+        <!-- 7. FOURNISSEURS -->
+        <div class="menu-item has-submenu" data-tooltip="Fournisseurs" data-module="fournisseurs">
+            <div class="menu-icon"><i class="fas fa-truck"></i></div>
+            <span class="menu-text">Fournisseurs</span>
+            <div class="submenu-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
+        <div class="floating-submenu" id="submenu-fournisseurs">
+            <div class="submenu-divider">CRÉATION</div>
+            <a href="{{ route('fournisseurs.create-engins') }}" class="submenu-link"><i class="fas fa-cogs text-primary"></i><span>Nouveau Fournisseur ENGIN</span></a>
+            <a href="{{ route('fournisseurs.create') }}" class="submenu-link"><i class="fas fa-box text-warning"></i><span>Nouveau Fournisseur MATÉRIEL</span></a>
+
+            <div class="submenu-divider">FOURNISSEURS ENGIN</div>
+            <a href="/fournisseurs/engins/kenam" class="submenu-link"><i class="fas fa-building text-primary"></i><span>Fournisseurs Internes</span></a>
+            <a href="/fournisseurs/engins/list" class="submenu-link"><i class="fas fa-truck text-success"></i><span>Fournisseurs Externes</span></a>
+
+            <div class="submenu-divider">FOURNISSEURS MATÉRIEL</div>
+            <a href="/fournisseurs/entrepots" class="submenu-link"><i class="fas fa-warehouse text-info"></i><span>Fournisseurs Entrepôts</span></a>
+            <a href="/fournisseurs/magasin" class="submenu-link"><i class="fas fa-store text-warning"></i><span>Fournisseurs Magasin</span></a>
+        </div>
+
+        <!-- 8. STOCK & MAGASINS -->
+        <div class="menu-item has-submenu" data-tooltip="Stock & Magasins" data-module="stock_magasins">
+            <div class="menu-icon"><i class="fas fa-boxes"></i></div>
+            <span class="menu-text">Stock & Magasins</span>
+            <div class="submenu-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
+        <div class="floating-submenu" id="submenu-stock_magasins">
+            <div class="submenu-divider">GESTION DES STOCKS</div>
+            <a href="/magasin/dashboard" class="submenu-link"><i class="fas fa-store text-success"></i><span>Magasin</span></a>
+            <a href="/entrepots/dashboard" class="submenu-link"><i class="fas fa-building text-info"></i><span>Entrepôts</span></a>
+
+            <div class="submenu-divider">OPÉRATIONS</div>
+            <a href="/magasin/entrees" class="submenu-link"><i class="fas fa-sign-in-alt text-primary"></i><span>Entrées Stock</span></a>
+            <a href="/magasin/sorties" class="submenu-link"><i class="fas fa-sign-out-alt text-warning"></i><span>Sorties Stock</span></a>
+            <a href="/magasin/inventaire" class="submenu-link"><i class="fas fa-clipboard-list text-info"></i><span>Inventaire</span></a>
+            <a href="/magasin/rapports" class="submenu-link"><i class="fas fa-chart-line text-secondary"></i><span>Rapports Stock</span></a>
+        </div>
+
+
+        <!-- 9. LOGISTIQUE -->
         <div class="menu-item has-submenu" data-tooltip="Logistique" data-module="logistique">
             <div class="menu-icon"><i class="fas fa-truck"></i></div>
             <span class="menu-text">Logistique</span>
@@ -262,7 +297,7 @@
             <a href="{{ route('materiel.cost-control.home') }}" class="submenu-link"><i class="fas fa-tachometer-alt text-primary"></i><span>Dashboard Atelier</span></a>
             <a href="/fournisseurs/commandes" class="submenu-link"><i class="fas fa-shopping-cart text-success"></i><span>Commandes d'achat</span></a>
             <a href="{{ route('materiel.assurances.index') }}" class="submenu-link"><i class="fas fa-shield-alt text-warning"></i><span>Assurances</span></a>
-            <a href="/fournisseurs/list" class="submenu-link"><i class="fas fa-truck text-info"></i><span>Fournisseurs</span></a>
+            <a href="{{ route('materiel.visites.index') }}" class="submenu-link"><i class="fas fa-clipboard-check text-success"></i><span>Visites techniques</span></a>
             <a href="/materiel/vehicules" class="submenu-link"><i class="fas fa-truck text-info"></i><span>Engins & Véhicules</span></a>
             <a href="/materiel/maintenance" class="submenu-link"><i class="fas fa-wrench text-warning"></i><span>Maintenance</span></a>
             <a href="{{ route('fleet.affectations.index') }}" class="submenu-link"><i class="fas fa-user-tag text-success"></i><span>Affectations</span></a>
@@ -270,17 +305,11 @@
             <a href="{{ route('materiel.missions.create') }}" class="submenu-link"><i class="fas fa-plus-circle text-success"></i><span>Nouvelle mission</span></a>
             <a href="{{ route('materiel.missions.export') }}" class="submenu-link"><i class="fas fa-file-export text-info"></i><span>Exporter missions</span></a>
 
-            <div class="submenu-divider">CHANTIERS</div>
-            <a href="/projets/dashboard" class="submenu-link"><i class="fas fa-hard-hat text-primary"></i><span>Dashboard Chantiers</span></a>
-            <a href="/projets/list" class="submenu-link"><i class="fas fa-list text-info"></i><span>Liste des chantiers</span></a>
-            <a href="/projets/create" class="submenu-link"><i class="fas fa-plus text-success"></i><span>Ouvrir un chantier</span></a>
-            <a href="/projets/reports" class="submenu-link"><i class="fas fa-chart-line text-warning"></i><span>Rapports chantier</span></a>
-
-            <div class="submenu-divider">STOCKS</div>
-            <a href="/magasin/dashboard" class="submenu-link"><i class="fas fa-store text-info"></i><span>Magasin</span></a>
-            <a href="/entrepots/list" class="submenu-link"><i class="fas fa-building text-secondary"></i><span>Entrepôts</span></a>
-            <a href="/entrepots/transferts" class="submenu-link"><i class="fas fa-exchange-alt text-warning"></i><span>Transferts inter-sites</span></a>
-
+            <div class="submenu-divider">PROJETS</div>
+            <a href="/projets/dashboard" class="submenu-link"><i class="fas fa-hard-hat text-primary"></i><span>Dashboard Projets</span></a>
+            <a href="/projets/list" class="submenu-link"><i class="fas fa-list text-info"></i><span>Liste des projets</span></a>
+            <a href="/projets/create" class="submenu-link"><i class="fas fa-plus text-success"></i><span>Ouvrir un projet</span></a>
+            <a href="/projets/reports" class="submenu-link"><i class="fas fa-chart-line text-warning"></i><span>Rapports projet</span></a>
         </div>
 
         <!-- 8. RESSOURCES HUMAINES -->
@@ -401,21 +430,20 @@
     }
 @endphp
 
-@if($usePermissionFilteredSidebar)
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const allowedPaths = @json($allowedSubmodulePaths);
-    const existingPaths = @json($existingSidebarPaths);
-    const normalizePath = (value) => {
-        if (!value) return '/';
-        let path = value;
-        if (path.length > 1 && path.endsWith('/')) {
+document.addEventListener('DOMContentLoaded', function() {
+    const usePermissionFilteredSidebar = {{ auth()->check() && auth()->user() && auth()->user()->role !== 'superadmin' ? 'true' : 'false' }};
+    const allowedSubmodulePaths = @json($allowedSubmodulePaths ?? []);
+    const existingSidebarPaths = @json($existingSidebarPaths ?? []);
+
+    const normalizePath = function(path) {
+        if (path.endsWith('/') && path !== '/') {
             path = path.slice(0, -1);
         }
         return path;
     };
 
-    const allowedSet = new Set(allowedPaths.map(normalizePath));
+    const allowedSet = new Set(allowedSubmodulePaths.map(normalizePath));
     const existingSet = new Set(existingPaths.map(normalizePath));
 
     document.querySelectorAll('#app-sidebar .floating-submenu').forEach(function (submenu) {
@@ -449,4 +477,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-@endif

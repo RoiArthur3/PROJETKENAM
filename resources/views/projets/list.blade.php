@@ -57,7 +57,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h6 class="text-muted mb-1">Budget Total</h6>
+                            <h6 class="text-muted mb-1">Estimation de Cout Total</h6>
                             <h3 class="mb-0">{{ number_format($projects->sum('budget_estime') ?? 0, 0, ',', ' ') }} M</h3>
                         </div>
                         <div class="ms-3">
@@ -104,7 +104,7 @@
                             <th>Nom du Projet</th>
                             <th>Client</th>
                             <th>Type</th>
-                            <th>Budget</th>
+                            <th>Estimation de Cout</th>
                             <th>Avancement</th>
                             <th>Responsable</th>
                             <th>Statut</th>

@@ -114,7 +114,7 @@
         <div class="row g-2">
             <div class="col-md-3">
                 <label class="form-label">Article</label>
-                <select name="lignes[{{INDEX}}][article_id]" class="form-select article-select">
+                <select name="lignes[__INDEX__][article_id]" class="form-select article-select">
                     <option value="">Sélectionner</option>
                     @foreach($articles as $article)
                         <option value="{{ $article->id }}" data-designation="{{ $article->designation }}" data-prix="{{ $article->prix_unitaire ?? 0 }}" data-unite="{{ $article->unite ?? 'Unité' }}">{{ $article->designation }}</option>
@@ -123,34 +123,34 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Désignation *</label>
-                <input type="text" name="lignes[{{INDEX}}][designation]" class="form-control designation" required>
+                <input type="text" name="lignes[__INDEX__][designation]" class="form-control designation" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Quantité *</label>
-                <input type="number" step="0.001" min="0.001" name="lignes[{{INDEX}}][quantite]" class="form-control" value="1" required>
+                <input type="number" step="0.001" min="0.001" name="lignes[__INDEX__][quantite]" class="form-control" value="1" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Unité *</label>
-                <input type="text" name="lignes[{{INDEX}}][unite]" class="form-control unite" value="Unité" required>
+                <input type="text" name="lignes[__INDEX__][unite]" class="form-control unite" value="Unité" required>
             </div>
             <div class="col-md-1 d-flex align-items-end">
                 <button type="button" class="btn btn-outline-danger remove-ligne"><i class="fas fa-trash"></i></button>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Prix unitaire HT *</label>
-                <input type="number" step="0.01" min="0" name="lignes[{{INDEX}}][prix_unitaire_ht]" class="form-control prix-unitaire" required>
+                <input type="number" step="0.01" min="0" name="lignes[__INDEX__][prix_unitaire_ht]" class="form-control prix-unitaire" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">TVA (%) *</label>
-                <input type="number" step="0.01" min="0" max="100" name="lignes[{{INDEX}}][tva_taux]" class="form-control" value="18" required>
+                <input type="number" step="0.01" min="0" max="100" name="lignes[__INDEX__][tva_taux]" class="form-control" value="18" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Remise (%)</label>
-                <input type="number" step="0.01" min="0" max="100" name="lignes[{{INDEX}}][remise]" class="form-control" value="0">
+                <input type="number" step="0.01" min="0" max="100" name="lignes[__INDEX__][remise]" class="form-control" value="0">
             </div>
             <div class="col-md-5">
                 <label class="form-label">Description</label>
-                <input type="text" name="lignes[{{INDEX}}][description]" class="form-control">
+                <input type="text" name="lignes[__INDEX__][description]" class="form-control">
             </div>
         </div>
     </div>
@@ -161,7 +161,7 @@
 let achatLineIndex = 0;
 
 function addAchatLine() {
-    const template = document.getElementById('ligne-template').innerHTML.replaceAll('{{INDEX}}', achatLineIndex++);
+    const template = document.getElementById('ligne-template').innerHTML.replaceAll('__INDEX__', achatLineIndex++);
     document.getElementById('lignes-container').insertAdjacentHTML('beforeend', template);
 }
 

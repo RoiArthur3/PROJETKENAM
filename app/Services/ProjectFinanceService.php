@@ -31,11 +31,25 @@ class ProjectFinanceService
      */
     public function getTotalExpenses(Project $project): float
     {
-        if (!Schema::hasTable('project_expenses')) {
-            return 0.0;
+        // Somme des dépenses classiques
+        $expenses = 0.0;
+        if (Schema::hasTable('project_expenses')) {
+            $expenses = (float) ProjectExpense::where('project_id', $project->id)->sum('montant');
         }
 
-        return ProjectExpense::where('project_id', $project->id)->sum('montant');
+        // Ajout du coût des missions engins liées (pointages)
+        $missionsCost = 0.0;
+        if (Schema::hasTable('vehicle_missions') && Schema::hasTable('vehicle_pointages')) {
+            $missions = \App\Models\VehicleMission::where('source_type', 'project')
+                ->where('source_id', $project->id)
+                ->pluck('id');
+            if ($missions->count() > 0) {
+                $missionsCost = (float) \App\Models\VehiclePointage::whereIn('vehicle_mission_id', $missions)
+                    ->sum('total_supplier_cost');
+            }
+        }
+
+        return $expenses + $missionsCost;
     }
 
     /**
@@ -121,6 +135,7 @@ class ProjectFinanceService
      */
     public function updateProjectRealBudget(Project $project): void
     {
+        // Met à jour le budget réel avec toutes les dépenses y compris les pointages engins
         $totalExpenses = $this->getTotalExpenses($project);
         $project->update(['budget_reel' => $totalExpenses]);
     }

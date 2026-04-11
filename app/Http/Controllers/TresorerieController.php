@@ -6,6 +6,7 @@ use App\Models\Caisse;
 use App\Models\ApprovisionnementCaisse;
 use App\Models\DepenseCaisse;
 use App\Models\MouvementCaisse;
+use App\Services\TresorerieIntegrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -46,9 +47,19 @@ class TresorerieController extends Controller
             abort(403, 'Accès non autorisé au module trésorerie');
         }
 
-        $caisses = Caisse::all(); // Temporarily removed with('responsable') to avoid relationship errors
-        $approvisionnementsRecents = ApprovisionnementCaisse::latest()->take(5)->get(); // Temporarily removed with() to avoid relationship errors
-        $depensesRecentes = DepenseCaisse::latest()->take(5)->get(); // Temporarily removed with() to avoid relationship errors
+        // Intégration dynamique automatique
+        $integrationService = new TresorerieIntegrationService();
+
+        // Intégrer les ventes et achats automatiquement
+        $integrationVentes = $integrationService->integrerVentesAutomatiquement();
+        $integrationAchats = $integrationService->integrerAchatsAutomatiquement();
+
+        // Vérifier si un approvisionnement est nécessaire
+        $verifApprovisionnement = $integrationService->verifierApprovisionnementAutomatique();
+
+        $caisses = Caisse::all();
+        $approvisionnementsRecents = ApprovisionnementCaisse::latest()->take(5)->get();
+        $depensesRecentes = DepenseCaisse::latest()->take(5)->get();
 
         $soldeTotal = $caisses->sum('solde_actuel');
         $nombreCaisses = $caisses->count();
@@ -56,17 +67,37 @@ class TresorerieController extends Controller
         $depensesMensuelles = DepenseCaisse::whereMonth('date_depense', now()->month)
             ->sum('montant');
 
+        // Statistiques enrichies avec intégrations
+        $totalEncaissements = DB::table('encaissements')->where('statut', 'valide')->sum('montant');
+        $totalDepenses = DB::table('depense_caisse')->where('statut', 'valide')->sum('montant');
+        $soldeBanque = DB::table('compte_bancaires')->sum('solde');
+        $totalTresorerie = $soldeTotal + $soldeBanque;
+
         // Créer le tableau stats pour la vue
         $stats = [
             'total_caisses' => $nombreCaisses,
             'solde_total' => $soldeTotal,
+            'solde_banque' => $soldeBanque,
+            'total_tresorerie' => $totalTresorerie,
+            'total_encaissements' => $totalEncaissements,
+            'total_depenses' => $totalDepenses,
+            'resultat_net' => $totalEncaissements - $totalDepenses,
             'variation' => 0, // À calculer si nécessaire
             'en_attente' => $approvisionnementsEnAttente,
             'total_approvisionnements' => ApprovisionnementCaisse::count(),
             'valides' => ApprovisionnementCaisse::where('statut', 'validé')->count(),
             'total_decaissements' => DepenseCaisse::count(),
-            'total_virements' => 0, // À implémenter si nécessaire
-            'valides_virements' => 0, // À implémenter si nécessaire
+            'total_virements' => DB::table('virements')->count(),
+            'valides_virements' => DB::table('virements')->where('statut', 'effectue')->count(),
+            'total_avances' => DB::table('avances')->count(),
+            'avances_ouvertes' => DB::table('avances')->where('statut', 'accorde')->sum('montant_rembourse'),
+        ];
+
+        // Données d'intégration pour la vue
+        $integrations = [
+            'ventes' => $integrationVentes,
+            'achats' => $integrationAchats,
+            'approvisionnement' => $verifApprovisionnement,
         ];
 
         return view('tresorerie.dashboard', compact(
@@ -77,7 +108,8 @@ class TresorerieController extends Controller
             'nombreCaisses',
             'approvisionnementsEnAttente',
             'depensesMensuelles',
-            'stats'
+            'stats',
+            'integrations'
         ));
     }
 

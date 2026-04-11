@@ -3,216 +3,149 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
-use App\Models\Client;
-use App\Models\User;
+use App\Http\Requests\ProjectRequest;
 use App\Services\ProjectService;
-use App\Services\ProjectFinanceService;
-use App\Services\ProjectKpiService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class ProjectController extends Controller
 {
     protected $projectService;
-    protected $financeService;
-    protected $kpiService;
 
-    public function __construct(
-        ProjectService $projectService,
-        ProjectFinanceService $financeService,
-        ProjectKpiService $kpiService
-    ) {
-        $this->middleware('auth');
+    public function __construct(ProjectService $projectService)
+    {
         $this->projectService = $projectService;
-        $this->financeService = $financeService;
-        $this->kpiService = $kpiService;
     }
 
+    /**
+     * Affiche la liste des projets.
+     */
     public function index()
     {
-        $projects = Project::with('client', 'responsable')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        $stats = [
-            'total' => Project::count(),
-            'brouillon' => Project::where('statut', 'brouillon')->count(),
-            'valides' => Project::where('statut', 'valide')->count(),
-            'en_cours' => Project::where('statut', 'en_cours')->count(),
-            'termines' => Project::where('statut', 'termine')->count(),
-            'clotured' => Project::where('statut', 'clotured')->count(),
-        ];
-
-        return view('projects.index', compact('projects', 'stats'));
+        $projects = Project::orderBy('created_at', 'desc')->paginate(10);
+        return view('projets.index', compact('projects'));
     }
 
-    public function list()
-    {
-        $projects = Project::with('client', 'responsable')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('projets.list', compact('projects'));
-    }
-
-    public function dashboard()
-    {
-        $projects = Project::all();
-        
-        $stats = [
-            'total' => $projects->count(),
-            'brouillon' => $projects->where('statut', 'brouillon')->count(),
-            'valides' => $projects->where('statut', 'valide')->count(),
-            'en_cours' => $projects->where('statut', 'en_cours')->count(),
-            'termines' => $projects->where('statut', 'termine')->count(),
-            'clotured' => $projects->where('statut', 'clotured')->count(),
-            'budget_total' => $projects->sum('budget_estime') ?? 0,
-            'budget_reel' => $projects->sum('budget_reel') ?? 0,
-            'operations_total' => 0,
-            'resources_total' => 0,
-        ];
-
-        // Calculer les opérations et ressources totales
-        foreach ($projects as $project) {
-            $stats['operations_total'] += $project->operations()->count();
-            $stats['resources_total'] += $project->resources()->where('statut', '!=', 'liberee')->count();
-        }
-
-        return view('projects.dashboard', compact('stats', 'projects'));
-    }
-
+    /**
+     * Affiche le formulaire de création de projet.
+     */
     public function create()
     {
-        $clients = Client::all();
-        $users = User::all();
-        $types = ['transport', 'location', 'chantier', 'livraison_reguliere', 'autre'];
+        $vehicules = \App\Models\Vehicule::all();
+        $clients = \App\Models\Client::all();
+        $users = \App\Models\User::all();
 
-        return view('projects.create', compact('clients', 'users', 'types'));
+        return view('projets.create', compact('vehicules', 'clients', 'users'));
     }
 
-    public function store(Request $request)
+    /**
+     * Enregistre un nouveau projet.
+     */
+    public function store(ProjectRequest $request)
     {
-        $validated = $request->validate([
-            'client_id' => 'nullable|exists:clients,id',
-            'responsable_id' => 'nullable|exists:users,id',
-            'nom' => 'required|string|max:255',
-            'type' => 'required|in:transport,location,chantier,livraison_reguliere,autre',
-            'description' => 'required|string',
-            'budget_estime' => 'nullable|numeric|min:0',
-            'date_debut' => 'required|date',
-            'date_fin_prevue' => 'required|date|after_or_equal:date_debut',
-            'notes' => 'nullable|string',
-        ]);
-
-        $validated['user_id'] = auth()->id();
-        $validated['statut'] = 'brouillon';
-        $validated['pourcentage_avancement'] = 0;
-
-        Project::create($validated);
-
-        return redirect()->route('projects.index')->with('success', 'Projet créé avec succès');
+        $project = $this->projectService->createProject($request->validated());
+        return redirect()->route('projets.show', $project)
+            ->with('success', 'Projet créé avec succès');
     }
 
+    /**
+     * Affiche les détails d'un projet.
+     */
     public function show(Project $project)
     {
-        $project->load([
-            'client',
-            'responsable',
-            'avances' => function ($query) {
-                $query->orderByDesc('date_encaissement')->orderByDesc('id');
-            },
-        ]);
-
-        $kpis = $this->kpiService->getProjectKpis($project);
-
-        return view('projects.show', compact('project', 'kpis'));
+        $project->load(['missions', 'pointages', 'vehicules']);
+        return view('projets.show', compact('project'));
     }
 
+    /**
+     * Affiche le formulaire d'édition de projet.
+     */
     public function edit(Project $project)
     {
-        $clients = Client::all();
-        $users = User::all();
-        $types = ['transport', 'location', 'chantier', 'livraison_reguliere', 'autre'];
-
-        return view('projects.edit', compact('project', 'clients', 'users', 'types'));
+        return view('projets.edit', compact('project'));
     }
 
-    public function update(Request $request, Project $project)
+    /**
+     * Met à jour les informations d'un projet.
+     */
+    public function update(ProjectRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'client_id' => 'nullable|exists:clients,id',
-            'responsable_id' => 'nullable|exists:users,id',
-            'nom' => 'required|string|max:255',
-            'type' => 'required|in:transport,location,chantier,livraison_reguliere,autre',
-            'description' => 'required|string',
-            'budget_estime' => 'nullable|numeric|min:0',
-            'date_debut' => 'required|date',
-            'date_fin_prevue' => 'required|date|after_or_equal:date_debut',
-            'notes' => 'nullable|string',
-        ]);
-
-        $project->update($validated);
-
-        return redirect()->route('projects.show', $project->id)->with('success', 'Projet mis à jour avec succès');
+        $project = $this->projectService->updateProject($project, $request->validated());
+        return redirect()->route('projets.show', $project)
+            ->with('success', 'Projet mis à jour avec succès');
     }
 
+    /**
+     * Supprime un projet.
+     */
     public function destroy(Project $project)
     {
-        // Ne pas supprimer les projets en cours ou terminés
-        if (in_array($project->statut, ['en_cours', 'termine', 'clotured'])) {
-            return back()->with('error', 'Impossible de supprimer un projet en cours ou terminé');
+        if ($this->projectService->deleteProject($project)) {
+            return redirect()->route('projets.index')
+                ->with('success', 'Projet supprimé avec succès');
         }
 
-        $project->delete();
-        return redirect()->route('projects.index')->with('success', 'Projet supprimé avec succès');
+        return redirect()->route('projets.index')
+            ->with('error', 'Impossible de supprimer ce projet');
     }
 
     /**
-     * Valider un projet
+     * Affiche le rapport de pointage des engins pour un projet donné, filtrable par engin et période.
      */
-    public function validateProject(Project $project)
+    public function pointageReport(Request $request, Project $project)
     {
-        if ($this->projectService->validateProject($project)) {
-            return back()->with('success', 'Projet validé avec succès');
-        }
+        $vehiculeId = $request->input('vehicule_id');
+        $dateDebut = $request->input('date_debut');
+        $dateFin = $request->input('date_fin');
 
-        return back()->with('error', 'Impossible de valider ce projet');
+        // Récupère toutes les missions engins liées au projet
+        $missions = \App\Models\VehicleMission::where('source_type', 'project')
+            ->where('source_id', $project->id)
+            ->when($vehiculeId, fn($q) => $q->where('vehicle_id', $vehiculeId))
+            ->pluck('id');
+
+        // Récupère tous les pointages filtrés
+        $pointages = \App\Models\VehiclePointage::with(['vehicle'])
+            ->whereIn('vehicle_mission_id', $missions)
+            ->when($dateDebut, fn($q) => $q->whereDate('date_pointage', '>=', $dateDebut))
+            ->when($dateFin, fn($q) => $q->whereDate('date_pointage', '<=', $dateFin))
+            ->orderBy('date_pointage', 'desc')
+            ->get();
+
+        // Liste des engins affectés
+        $vehicules = \App\Models\Vehicule::whereIn('id',
+            \App\Models\VehicleMission::where('source_type', 'project')
+                ->where('source_id', $project->id)
+                ->pluck('vehicle_id')
+        )->get();
+
+        return view('projets.pointage-report', compact('project', 'pointages', 'vehicules', 'vehiculeId', 'dateDebut', 'dateFin'));
     }
 
     /**
-     * Démarrer un projet
+     * Affiche le dashboard des projets avec KPIs.
      */
-    public function startProject(Project $project)
+    public function dashboard()
     {
-        if ($this->projectService->startProject($project)) {
-            return back()->with('success', 'Projet démarré avec succès');
-        }
+        $projects = Project::withCount(['missions', 'vehicules'])
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
 
-        return back()->with('error', 'Impossible de démarrer ce projet');
+        $kpis = [
+            'total_projects' => Project::count(),
+            'active_projects' => Project::where('statut', 'actif')->count(),
+            'total_missions' => \App\Models\VehicleMission::count(),
+            'total_vehicules' => \App\Models\Vehicule::count(),
+        ];
+
+        return view('projets.dashboard', compact('projects', 'kpis'));
     }
 
     /**
-     * Clôturer un projet
+     * Archive un projet.
      */
-    public function closeProject(Project $project)
-    {
-        // Vérifier les conditions de clôture
-        $requirements = $this->projectService->validateClosureRequirements($project);
-
-        if (!$requirements['all_met']) {
-            return back()->with('error', 'Les conditions de clôture ne sont pas toutes satisfaites');
-        }
-
-        if ($this->projectService->closeProject($project)) {
-            return back()->with('success', 'Projet clôturé avec succès');
-        }
-
-        return back()->with('error', 'Impossible de clôturer ce projet');
-    }
-
-    /**
-     * Archiver un projet
-     */
-    public function archiveProject(Project $project)
+    public function archive(Project $project)
     {
         if ($this->projectService->archiveProject($project)) {
             return back()->with('success', 'Projet archivé avec succès');
@@ -233,5 +166,63 @@ class ProjectController extends Controller
         $this->projectService->updateProgress($project, $validated['pourcentage_avancement']);
 
         return back()->with('success', 'Avancement mis à jour');
+    }
+
+    /**
+     * Prolonger un projet
+     */
+    public function prolongerProjet(Request $request, Project $project)
+    {
+        $validated = $request->validate([
+            'date_fin' => 'required|date|after_or_equal:date_debut',
+            'motif_prolongation' => 'required|string|max:1000',
+        ]);
+
+        $project->update([
+            'date_fin' => $validated['date_fin'],
+            'motif_prolongation' => $validated['motif_prolongation'],
+            'date_derniere_modification' => now(),
+        ]);
+
+        return back()->with('success', 'Projet prolongé avec succès');
+    }
+
+    /**
+     * Clôturer un projet
+     */
+    public function closeProject(Request $request, Project $project)
+    {
+        $validated = $request->validate([
+            'date_fin_reelle' => 'required|date',
+            'rapport_cloture' => 'required|string|max:2000',
+            'avancement_final' => 'required|integer|min:0|max:100',
+        ]);
+
+        $project->update([
+            'statut' => 'termine',
+            'date_fin_reelle' => $validated['date_fin_reelle'],
+            'rapport_cloture' => $validated['rapport_cloture'],
+            'avancement' => $validated['avancement_final'],
+            'date_cloture' => now(),
+        ]);
+
+        return redirect()->route('projets.index')->with('success', 'Projet clôturé avec succès');
+    }
+
+    /**
+     * Exporte les données d'un projet au format Excel.
+     */
+    public function export(Project $project)
+    {
+        return $this->projectService->exportProject($project);
+    }
+
+    /**
+     * API: Récupère les statistiques d'un projet.
+     */
+    public function stats(Project $project)
+    {
+        $stats = $this->projectService->getProjectStats($project);
+        return response()->json($stats);
     }
 }

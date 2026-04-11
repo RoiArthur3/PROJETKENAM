@@ -281,6 +281,38 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Récupère les statistiques des Visites Techniques
+     */
+    private function getVisitesStats()
+    {
+        try {
+            $total_visites = 0;
+            $visites_expiration_30jours = 0;
+
+            if (Schema::hasTable('visites_techniques')) {
+                $total_visites = DB::table('visites_techniques')->count();
+
+                // Visites expirant dans 30 jours (entre maintenant et dans 30 jours)
+                $visites_expiration_30jours = DB::table('visites_techniques')
+                    ->where('date_expiration', '>', now())
+                    ->where('date_expiration', '<=', now()->addDays(30))
+                    ->where('statut', '=', 'valide')
+                    ->count();
+            }
+
+            return [
+                'total_visites' => $total_visites,
+                'visites_expiration_30jours' => $visites_expiration_30jours,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total_visites' => 0,
+                'visites_expiration_30jours' => 0,
+            ];
+        }
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -298,13 +330,14 @@ class DashboardController extends Controller
             $comptabilite = $this->getAccountingStats();
             $magasin = $this->getMagasinStats();
             $assurances = $this->getAssurancesStats();
+            $visites = $this->getVisitesStats();
             $previsionalTreasury = $this->getPrevisionalTreasuryStats();
             $smsStats = $this->getSMSStats();
             $expiringContracts = $this->getExpiringContractsCount();
             $operationsParStatut = $this->getOperationsParStatut();
             $operationsSixMois = $this->getOperationsSixDerniersMois();
 
-            return view('dashboard', compact('stats', 'charts', 'alerts', 'tresorerie', 'comptabilite', 'magasin', 'assurances', 'previsionalTreasury', 'smsStats', 'expiringContracts', 'operationsParStatut', 'operationsSixMois'));
+            return view('dashboard', compact('stats', 'charts', 'alerts', 'tresorerie', 'comptabilite', 'magasin', 'assurances', 'visites', 'previsionalTreasury', 'smsStats', 'expiringContracts', 'operationsParStatut', 'operationsSixMois'));
         } catch (\Exception $e) {
             // En cas d'erreur, retourner un dashboard simplifié
             return view('dashboard-simple', [

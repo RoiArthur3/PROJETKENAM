@@ -19,7 +19,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-plus-circle me-2"></i>Créer un Nouveau Projet
+                        <i class="fas fa-plus-circle me-2"></i>Créer une Estimation de Cout
                     </h6>
                     <span class="badge bg-secondary">Brouillon</span>
                 </div>
@@ -45,17 +45,17 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="nom" class="form-label required">Nom du Projet <span style="color:red">*</span></label>
+                                <label for="nom" class="form-label required">Nom de l'Estimation <span style="color:red">*</span></label>
                                 <input type="text" name="nom" class="form-control @error('nom') is-invalid @enderror"
                                        id="nom" value="{{ old('nom') }}" placeholder="Ex: Transport Marchandises" required>
                                 @error('nom')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Donnez un nom explicite à votre projet</div>
+                                <div class="form-text">Donnez un nom explicite à votre estimation</div>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="type" class="form-label required">Type de Projet <span style="color:red">*</span></label>
+                                <label for="type" class="form-label required">Type d'Estimation <span style="color:red">*</span></label>
                                 <select class="form-select @error('type') is-invalid @enderror" name="type" id="type" required>
                                     <option value="">-- Sélectionner un type --</option>
                                     @foreach($types as $typeValue)
@@ -67,7 +67,7 @@
                                 @error('type')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Catégorie du projet (Transport, Location, Chantier, etc.)</div>
+                                <div class="form-text">Catégorie de l'estimation (Transport, Location, Chantier, etc.)</div>
                             </div>
 
                             <div class="col-md-12 mb-3">
@@ -77,7 +77,7 @@
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Fournissez les détails importants pour exécuter le projet</div>
+                                <div class="form-text">Fournissez les détails importants pour l'estimation</div>
                             </div>
 
                             <div class="col-md-12 mb-3">
@@ -90,6 +90,26 @@
                             </div>
                         </div>
 
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="vehicule_id" class="form-label">Affecter un Engin</label>
+                                <select class="form-select @error('vehicule_id') is-invalid @enderror" name="vehicule_id" id="vehicule_id">
+                                    <option value="">-- Sélectionner un engin --</option>
+                                    @if(isset($vehicules))
+                                        @foreach($vehicules as $vehicule)
+                                            <option value="{{ $vehicule->id }}" {{ old('vehicule_id') == $vehicule->id ? 'selected' : '' }}>
+                                                {{ $vehicule->immatriculation }} - {{ $vehicule->marque }} {{ $vehicule->modele }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                @error('vehicule_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Vous pouvez affecter un engin disponible à cette estimation.</div>
+                            </div>
+                        </div>
                         <hr class="my-4">
 
                         <!-- Section: Affectations et Responsabilités -->
@@ -117,34 +137,36 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="responsable_id" class="form-label">Responsable du Projet</label>
+                                <label for="responsable_id" class="form-label">Responsable de l'Estimation</label>
                                 <select class="form-select @error('responsable_id') is-invalid @enderror" name="responsable_id" id="responsable_id">
                                     <option value="">-- Assigner un responsable --</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}" {{ old('responsable_id') == $user->id ? 'selected' : '' }}>
-                                            {{ $user->nom ?? $user->name }}
-                                        </option>
-                                    @endforeach
+                                    @if(isset($personnels))
+                                        @foreach($personnels as $pers)
+                                            <option value="{{ $pers->user_id }}" {{ old('responsable_id') == $pers->user_id ? 'selected' : '' }}>
+                                                {{ $pers->nom }} {{ $pers->prenoms }} - {{ $pers->poste }}
+                                            </option>
+                                        @endforeach
+                                    @endif
                                 </select>
                                 @error('responsable_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Personne responsable de la conduite du projet</div>
+                                <div class="form-text">Personne responsable de la conduite du projet (liste RH)</div>
                             </div>
                         </div>
 
                         <hr class="my-4">
 
-                        <!-- Section: Budgétisation -->
+                        <!-- Section: Estimation de Cout -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="text-primary mb-3">
-                                    <i class="fas fa-coins me-2"></i>Budgétisation et Budget
+                                    <i class="fas fa-coins me-2"></i>Estimation de Cout
                                 </h5>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="budget_estime" class="form-label">Budget Estimé (en millions FCFA)</label>
+                                <label for="budget_estime" class="form-label">Estimation de Cout (en millions FCFA)</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
                                     <input type="number" name="budget_estime" class="form-control @error('budget_estime') is-invalid @enderror"
@@ -153,7 +175,7 @@
                                 @error('budget_estime')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <div class="form-text">Budget prévisionnel en millions FCFA</div>
+                                <div class="form-text">Estimation prévisionnelle en millions FCFA</div>
                             </div>
                         </div>
 

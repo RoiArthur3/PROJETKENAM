@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Projet - Detail')
+@section('title', 'Estimation de Cout - Détail')
 
 @section('content')
 <div class="project-page">
@@ -8,7 +8,7 @@
         <div class="card-body p-4 p-lg-5">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                 <div>
-                    <p class="text-uppercase small fw-bold text-primary mb-2">Pilotage projet</p>
+                    <p class="text-uppercase small fw-bold text-primary mb-2">Estimation de Cout</p>
                     <h1 class="h3 mb-2">{{ $project->nom }}</h1>
                     <p class="text-muted mb-0">{{ $project->description }}</p>
                 </div>
@@ -138,16 +138,16 @@
         <div class="col-lg-5">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h2 class="h5 mb-0">Budget et depenses</h2>
+                    <h2 class="h5 mb-0">Cout estimé basé sur les pointages engins</h2>
                 </div>
                 <div class="card-body px-4 pb-4">
                     <ul class="list-group list-group-flush mb-3">
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span>Budget estime</span>
+                            <span>Cout estimé (prévisionnel)</span>
                             <strong>{{ number_format($kpis['budgetAnalysis']['budget_estime'], 0, ',', ' ') }} FCFA</strong>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span>Budget reel</span>
+                            <span>Cout réel (pointages engins)</span>
                             <strong>{{ number_format($kpis['budgetAnalysis']['budget_reel'], 0, ',', ' ') }} FCFA</strong>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
@@ -174,6 +174,13 @@
                 </div>
             </div>
         </div>
+    </div>
+
+
+    <div class="mb-4">
+        <a href="{{ route('projets.pointage_report', $project->id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-table me-1"></i> Rapport de pointage engins (filtrable)
+        </a>
     </div>
 
     @if(!empty($kpis['milestonesStatus']))

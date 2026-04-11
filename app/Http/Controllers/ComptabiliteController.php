@@ -60,9 +60,9 @@ class ComptabiliteController extends Controller
             $facturesPayees = $tablesExist['factures'] ? DB::table('factures')->where('statut', 'payee')->count() : 0;
             $montantFacturesPayees = $tablesExist['factures'] ? DB::table('factures')->where('statut', 'payee')->sum('montant_ttc') : 0;
 
-            // Opérations payées (chiffre d'affaires réel) - utiliser is_paid = 1
-            $operationsPayees = $tablesExist['operations'] ? DB::table('operations')->where('is_paid', 1)->count() : 0;
-            $montantOperationsPayees = $tablesExist['operations'] ? DB::table('operations')->where('is_paid', 1)->sum('montant') : 0;
+            // Opérations validées (chiffre d'affaires réel) - utiliser statut_courant = 'validée'
+            $operationsPayees = $tablesExist['operations'] ? DB::table('operations')->where('statut_courant', 'validée')->count() : 0;
+            $montantOperationsPayees = $tablesExist['operations'] ? DB::table('operations')->where('statut_courant', 'validée')->sum('montant') : 0;
 
             // === CALCULS COMBINÉS POUR LE CHIFFRE D'AFFAIRES ===
             // Si pas de factures, utiliser les opérations payées comme équivalent
@@ -1025,9 +1025,9 @@ class ComptabiliteController extends Controller
         $previousTotals = $previousEnd->lt($previousStart)
             ? ['total_produits' => 0, 'resultat_net' => 0]
             : $this->computeCompteResultatTotals($previousStart, $previousEnd);
-        
+
     // Déterminer si on a des données année N-1
-    $hasPreviousData = $previousEnd->gte($previousStart) && 
+    $hasPreviousData = $previousEnd->gte($previousStart) &&
               ($previousTotals['total_produits'] ?? 0) > 0;
 
         $chiffreAffaires = $totaux['total_produits'];
@@ -1529,7 +1529,7 @@ class ComptabiliteController extends Controller
         // === REVENUS DÉTAILLÉS PAR MÉTIER ===
         $revenusLocations = $this->sumRevenusLocations($debut, $fin);
         $revenusVentes = $this->sumRevenusVentes($debut, $fin);
-        
+
         // === REVENUS AUXILIAIRES ===
         $encaissements = $this->sumEncaissements($debut, $fin);
         $revenusVehicules = $this->sumVehicleEntries('revenue', $debut, $fin);
@@ -1563,7 +1563,7 @@ class ComptabiliteController extends Controller
         $totalProduits = array_sum($produits);
             $totalChargesExploitation = $depensesGenerales + $chargesVehicules + $chargesSalariales + $chargesSocialesEtFiscales;
             $ebe = $totalProduits - $totalChargesExploitation;
-        
+
         $totalCharges = array_sum($charges);
         $margeBrute = $totalProduits - ($depensesGenerales + $chargesVehicules);
         $resultatExploitation = $totalProduits - $totalCharges;
@@ -2760,7 +2760,7 @@ class ComptabiliteController extends Controller
                         $details = DB::table('factures')
                             ->leftJoin('clients', 'factures.client_id', '=', 'clients.id')
                             ->where('factures.statut', 'en_retard')
-                            ->select('factures.numero as numero_facture', 'clients.nom as client_nom', 
+                            ->select('factures.numero as numero_facture', 'clients.nom as client_nom',
                                     'factures.date_facture', 'factures.montant_ttc', 'factures.statut')
                             ->get();
                     }

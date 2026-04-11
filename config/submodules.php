@@ -183,15 +183,15 @@ return [
             'rh_paie'      => ['name' => 'Paie', 'icon' => 'fas fa-money-bill', 'route' => 'rh.paie.index'],
         ]
     ],
-    'chantier' => [
-        'name' => 'Gestion de Chantier',
+    'projet' => [
+        'name' => 'Gestion de Projet',
         'icon' => 'fas fa-hard-hat',
         'submodules' => [
-            'chantier_dashboard' => ['name' => 'Dashboard', 'icon' => 'fas fa-tachometer-alt', 'url' => '/projets/dashboard'],
-            'chantier_list'      => ['name' => 'Liste des chantiers', 'icon' => 'fas fa-list', 'url' => '/projets/list'],
-            'chantier_create'    => ['name' => 'Ouvrir un chantier', 'icon' => 'fas fa-plus', 'url' => '/projets/create'],
-            'chantier_cost_control' => ['name' => 'Suivi Cost Control', 'icon' => 'fas fa-coins', 'url' => '/projets/dashboard'],
-            'chantier_reports'   => ['name' => 'Rapports', 'icon' => 'fas fa-chart-line', 'url' => '/projets/reports'],
+            'projet_dashboard' => ['name' => 'Dashboard', 'icon' => 'fas fa-tachometer-alt', 'url' => '/projets/dashboard'],
+            'projet_list'      => ['name' => 'Liste des projets', 'icon' => 'fas fa-list', 'url' => '/projets/list'],
+            'projet_create'    => ['name' => 'Ouvrir un projet', 'icon' => 'fas fa-plus', 'url' => '/projets/create'],
+            'projet_cost_control' => ['name' => 'Suivi Cost Control', 'icon' => 'fas fa-coins', 'url' => '/projets/dashboard'],
+            'projet_reports'   => ['name' => 'Rapports', 'icon' => 'fas fa-chart-line', 'url' => '/projets/reports'],
         ]
     ],
     'reporting' => [

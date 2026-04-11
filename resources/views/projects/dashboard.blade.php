@@ -76,7 +76,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Budget Total
+                                Estimation de Cout Totale
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['budget_total'] ?? 0, 0, ',', ' ') }} M</div>
                         </div>
@@ -171,7 +171,7 @@
                 <div class="card-body">
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="font-weight-bold">Budget Estimé Total</span>
+                            <span class="font-weight-bold">Estimation de Cout Totale</span>
                         </div>
                         <div class="h5 text-primary font-weight-bold">{{ number_format($stats['budget_total'] ?? 0, 0, ',', ' ') }} FCFA</div>
                     </div>
@@ -180,7 +180,7 @@
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="font-weight-bold">Budget Réel Total</span>
+                            <span class="font-weight-bold">Coût Réel Total</span>
                         </div>
                         <div class="h5 text-info font-weight-bold">{{ number_format($stats['budget_reel'] ?? 0, 0, ',', ' ') }} FCFA</div>
                     </div>
@@ -238,7 +238,7 @@
                         <th>Responsable</th>
                         <th>Statut</th>
                         <th>Avancement</th>
-                        <th>Budget</th>
+                        <th>Estimation de Cout</th>
                         <th>Actions</th>
                     </tr>
                 </thead>

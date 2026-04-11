@@ -25,6 +25,7 @@ class User extends Authenticatable
         'date_embauche',
         'salaire',
         'last_login_at',
+        'photo_profil',
         // Ivorian HR Fields
         'sexe',
         'date_naissance',
@@ -115,8 +116,17 @@ class User extends Authenticatable
         if ($module === 'chantier') {
             $moduleToCheck = 'projects';
         }
-        if (in_array($module, ['achat', 'fournisseurs'], true)) {
+        if ($module === 'achat') {
             $moduleToCheck = 'achat';
+        }
+        if ($module === 'fournisseurs') {
+            $moduleToCheck = 'fournisseurs';
+        }
+        if ($module === 'magasin') {
+            $moduleToCheck = 'magasin';
+        }
+        if ($module === 'entrepot') {
+            $moduleToCheck = 'entrepot';
         }
 
         // 3. Admin : accès strict aux modules cochés, dashboard général seulement s'il est coché.

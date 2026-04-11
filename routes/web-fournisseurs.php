@@ -20,12 +20,47 @@ Route::prefix('fournisseurs')->name('fournisseurs.')->middleware(['auth'])->grou
     // Dashboard fournisseurs
     Route::get('/dashboard', [FournisseurController::class, 'dashboard'])->name('dashboard');
 
+    // Fournisseurs par catégorie
+    Route::get('/magasin', function() {
+        return view('fournisseurs.magasin', [
+            'fournisseurs' => \App\Models\Fournisseur::paginate(15),
+            'categorie' => 'magasin'
+        ]);
+    })->name('magasin');
+
+    Route::get('/entrepots', function() {
+        return view('fournisseurs.entrepots', [
+            'fournisseurs' => \App\Models\Fournisseur::paginate(15),
+            'categorie' => 'entrepot'
+        ]);
+    })->name('entrepots');
+
+    // Fournisseurs engins
+    Route::prefix('engins')->name('engins.')->group(function () {
+        Route::get('/kenam', function() {
+            return view('fournisseurs.engins.kenam', [
+                'engins' => \App\Models\Vehicule::where('disponible', true)->paginate(15),
+                'type' => 'kenam'
+            ]);
+        })->name('kenam');
+
+        Route::get('/list', function() {
+            return view('fournisseurs.engins.list', [
+                'engins' => \App\Models\Vehicule::paginate(15),
+                'type' => 'externe'
+            ]);
+        })->name('list');
+    });
+
     // Gestion des fournisseurs
     Route::get('/', [FournisseurController::class, 'index'])->name('index');
     Route::get('/list', function() {
         return view('fournisseurs.list', ['fournisseurs' => \App\Models\Fournisseur::paginate(15)]);
     })->name('list');
     Route::get('/create', [FournisseurController::class, 'create'])->name('create');
+    Route::get('/create-engins', function() {
+        return view('fournisseurs.create-engins', ['categories' => \App\Models\CategorieFournisseur::all()]);
+    })->name('create-engins');
     Route::post('/', [FournisseurController::class, 'store'])->name('store');
     Route::get('/{fournisseur}', [FournisseurController::class, 'show'])->name('show');
     Route::get('/{fournisseur}/edit', [FournisseurController::class, 'edit'])->name('edit');

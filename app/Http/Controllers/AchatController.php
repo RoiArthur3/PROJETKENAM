@@ -82,7 +82,7 @@ class AchatController extends Controller
             $articles = Produit::query()->orderBy('designation')->get();
         }
 
-        $comptes = CompteComptable::query()->orderByRaw('COALESCE(numero, numero_compte, code, id) asc')->get();
+        $comptes = CompteComptable::query()->orderByRaw('COALESCE(numero_compte, intitule, id) asc')->get();
 
         return view('achat.create', compact('fournisseurs', 'articles', 'comptes'));
     }

@@ -409,8 +409,8 @@
                             </div>
                             <div class="progress" style="height: 10px; border-radius: 5px; background-color: #f0f0f0;">
                                 @php
-                                    $taux_depense = ($comptabilite['revenus_mois'] ?? 0) > 0 
-                                        ? min(100, (($comptabilite['depenses_mois'] ?? 0) / ($comptabilite['revenus_mois'] ?? 0)) * 100) 
+                                    $taux_depense = ($comptabilite['revenus_mois'] ?? 0) > 0
+                                        ? min(100, (($comptabilite['depenses_mois'] ?? 0) / ($comptabilite['revenus_mois'] ?? 0)) * 100)
                                         : 0;
                                 @endphp
                                 <div class="progress-bar bg-danger" style="width: {{ $taux_depense }}%; border-radius: 5px;"></div>
@@ -434,6 +434,31 @@
                                     <p class="text-muted small text-uppercase mb-0">Expiration (2 mois)</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12">
+                <div class="card h-100 shadow-sm border-0 bg-white">
+                    <div class="card-body">
+                        <h6 class="card-title fw-bold text-dark mb-4">Visites Techniques</h6>
+                        <div class="text-center py-3">
+                            <div class="row align-items-center">
+                                <div class="col-6 border-end">
+                                    <h4 class="fw-bold mb-2">{{ $visites['total_visites'] ?? 0 }}</h4>
+                                    <p class="text-muted small text-uppercase mb-0">Total Visites</p>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="fw-bold text-warning mb-2">{{ $visites['visites_expiration_30jours'] ?? 0 }}</h4>
+                                    <p class="text-muted small text-uppercase mb-0">Expiration (30 jours)</p>
+                                </div>
+                            </div>
+                            @if(($visites['visites_expiration_30jours'] ?? 0) > 0)
+                            <div class="alert alert-warning alert-sm mt-3 mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>{{ $visites['visites_expiration_30jours'] }}</strong> visite(s) technique(s) expirent dans moins de 30 jours
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -601,7 +626,7 @@ function initChartsOperations() {
         const labels = @json($operationsParStatut['labels'] ?? []);
         const data = @json($operationsParStatut['data'] ?? []);
         const colors = @json($operationsParStatut['colors'] ?? []);
-        
+
         // Vérifier s'il y a des données
         if (labels.length > 0 && data.length > 0) {
             new Chart(ctxStatut, {
@@ -611,7 +636,7 @@ function initChartsOperations() {
                     datasets: [{
                         data: data,
                         backgroundColor: colors.length > 0 ? colors : [
-                            '#007BFF', '#28A745', '#FFC107', '#17A2B8', 
+                            '#007BFF', '#28A745', '#FFC107', '#17A2B8',
                             '#DC3545', '#6C757D', '#6F42C1'
                         ],
                         borderColor: '#fff',

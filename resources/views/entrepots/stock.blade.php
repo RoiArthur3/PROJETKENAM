@@ -13,6 +13,9 @@
             <a href="{{ route('entrepots.list') }}" class="btn btn-outline-primary">
                 <i class="fas fa-warehouse me-2"></i>Liste Entrepôts
             </a>
+            <a href="{{ route('entrepots.create') }}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>Créer un Entrepôt
+            </a>
             <a href="{{ route('entrepots.transferts') }}" class="btn btn-outline-info">
                 <i class="fas fa-exchange-alt me-2"></i>Transferts
             </a>

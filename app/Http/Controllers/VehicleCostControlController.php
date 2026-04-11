@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\Vehicule;
 use App\Models\VehicleFinancialEntry;
 use App\Models\VehicleMission;
-use App\Models\VehiclePointage;
+use App\Models\Pointage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -18,6 +18,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
+use App\Services\ProjetFinancialService;
 
 // ...existing code...
 use Illuminate\Http\Request;
@@ -28,13 +29,20 @@ use Illuminate\Support\Facades\Schema;
 
 class VehicleCostControlController extends Controller
 {
+    private ProjetFinancialService $financialService;
+
+    public function __construct(ProjetFinancialService $financialService)
+    {
+        $this->financialService = $financialService;
+    }
+
     /**
      * Afficher la liste des pointages (page dédiée)
      */
     public function list(Request $request)
     {
         try {
-            if (!$this->hasVehiclePointagesTable()) {
+            if (!$this->hasPointagesTable()) {
                 return redirect()->route('materiel.vehicules')
                     ->with('warning', 'Le module Cost Control n\'est pas encore initialisé (table vehicle_pointages manquante).');
             }
@@ -45,7 +53,7 @@ class VehicleCostControlController extends Controller
             $missionId = $request->input('mission_id');
             $search    = $request->input('search');
 
-            $pointagesQuery = VehiclePointage::with(['mission.vehicle', 'mission.client', 'vehicle', 'driver', 'operation'])
+            $pointagesQuery = Pointage::with(['mission.vehicle', 'mission.client', 'vehicle', 'driver', 'operation'])
                 ->when($submodule && $this->pointageColumnExists('submodule'), fn ($q) => $q->where('submodule', $submodule))
                 ->when($dateFrom, fn ($q) => $q->whereDate('date_pointage', '>=', $dateFrom))
                 ->when($dateTo,   fn ($q) => $q->whereDate('date_pointage', '<=', $dateTo))
@@ -127,7 +135,7 @@ class VehicleCostControlController extends Controller
     public function rapportCostControl(Request $request)
     {
         try {
-            if (!$this->hasVehiclePointagesTable()) {
+            if (!$this->hasPointagesTable()) {
                 return redirect()->route('materiel.vehicules')
                     ->with('warning', 'Le module Cost Control n\'est pas encore initialise (table vehicle_pointages manquante).');
             }
@@ -138,7 +146,7 @@ class VehicleCostControlController extends Controller
             $dateTo    = $request->input('date_to');
             $export    = $request->input('export');
 
-            $baseQuery = VehiclePointage::with(['vehicle', 'mission.client'])
+            $baseQuery = Pointage::with(['vehicle', 'mission.client'])
                 ->when($this->pointageColumnExists('submodule'), fn ($q) => $q->where('submodule', 'engin'))
                 ->when($vehicleId, fn ($q) => $q->where('vehicle_id', $vehicleId))
                 ->when($missionId, fn ($q) => $q->where('vehicle_mission_id', $missionId))
@@ -324,12 +332,12 @@ class VehicleCostControlController extends Controller
     public function index(Request $request)
     {
         try {
-            if (!$this->hasVehiclePointagesTable() || !$this->hasVehicleFinancialEntriesTable()) {
+            if (!$this->hasPointagesTable() || !$this->hasVehicleFinancialEntriesTable()) {
                 return redirect()->route('materiel.vehicules')
                     ->with('warning', 'Le module Cost Control n\'est pas encore initialisé (tables requises manquantes).');
             }
 
-            $pointagesQuery = VehiclePointage::with([
+            $pointagesQuery = Pointage::with([
                 'mission.vehicle',
                 'mission.client',
                 'vehicle',
@@ -450,7 +458,7 @@ class VehicleCostControlController extends Controller
 
     public function create(Request $request)
     {
-        $pointage = new VehiclePointage();
+        $pointage = new Pointage();
         $missions = $this->missionTableExists()
             ? VehicleMission::with(['vehicle', 'driver', 'client'])
                 ->orderByDesc('start_at')
@@ -477,6 +485,11 @@ class VehicleCostControlController extends Controller
      */
     public function createEnginPointage(Request $request)
     {
+        // Charger les projets actifs
+        $projets = Operation::where('statut_courant', '!=', 'terminee')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Récupérer tous les véhicules disponibles (sauf les Camions qui vont au plateau)
         $vehicleModels = Vehicule::where('disponible', true)
             ->where(function ($q) {
@@ -502,6 +515,7 @@ class VehicleCostControlController extends Controller
         $suppliers = \App\Models\Fournisseur::orderBy('raison_sociale')->get();
 
         return view('materiel.cost-control.engin-pointage-form', [
+            'projets' => $projets,
             'vehicles' => $vehicleModels,
             'suppliers' => $suppliers,
             'vehiclesWithPrices' => $vehicles->toArray(),
@@ -545,8 +559,17 @@ class VehicleCostControlController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatePointage($request);
-        $pointage = VehiclePointage::create($this->buildPayload($data));
+        $pointage = Pointage::create($this->buildPayload($data));
         $this->syncMissionTimelineFromPointages($pointage->mission);
+
+        // Mettre à jour le montant à facturer du projet si un projet est associé
+        if (!empty($data['projet_id'])) {
+            try {
+                $this->financialService->updateMontantFacturer($data['projet_id']);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la mise à jour du montant à facturer: ' . $e->getMessage());
+            }
+        }
 
         return redirect()->route(
             $pointage->submodule === 'camion_plateau' ? 'materiel.cost-control.plateau.list' : 'materiel.cost-control.engin.list'
@@ -573,7 +596,7 @@ class VehicleCostControlController extends Controller
                 // Re-hydrate as a fake Request so we can reuse validatePointage / buildPayload
                 $fakeRequest = new Request($row);
                 $data = $this->validatePointage($fakeRequest);
-                $pointage = VehiclePointage::create($this->buildPayload($data));
+                $pointage = Pointage::create($this->buildPayload($data));
                 $this->syncMissionTimelineFromPointages($pointage->mission);
                 $saved++;
             } catch (\Illuminate\Validation\ValidationException $e) {
@@ -607,7 +630,7 @@ class VehicleCostControlController extends Controller
             ->withErrors(['batch' => empty($errors) ? 'Aucune ligne valide à enregistrer.' : implode(' | ', $errors)]);
     }
 
-    public function edit(VehiclePointage $pointage)
+    public function edit(Pointage $pointage)
     {
         $missions = $this->missionTableExists()
             ? VehicleMission::with(['vehicle', 'driver', 'client'])
@@ -630,21 +653,37 @@ class VehicleCostControlController extends Controller
         ));
     }
 
-    public function show(VehiclePointage $pointage)
+    public function show(Pointage $pointage)
     {
         $pointage->load(['mission.vehicle', 'mission.client', 'vehicle', 'driver', 'operation']);
 
         return view('materiel.cost-control.show', compact('pointage'));
     }
 
-    public function update(Request $request, VehiclePointage $pointage)
+    public function update(Request $request, Pointage $pointage)
     {
         $data = $this->validatePointage($request);
         $pointage->update($this->buildPayload($data));
         $this->syncMissionTimelineFromPointages($pointage->mission);
 
+        // Mettre à jour le montant à facturer du projet si un projet est associé
+        if (!empty($data['projet_id'])) {
+            try {
+                $this->financialService->updateMontantFacturer($data['projet_id']);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la mise à jour du montant à facturer: ' . $e->getMessage());
+            }
+        } elseif ($pointage->operation_id) {
+            // Si le pointage était déjà associé à un projet, mettre à jour ce projet
+            try {
+                $this->financialService->updateMontantFacturer($pointage->operation_id);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la mise à jour du montant à facturer: ' . $e->getMessage());
+            }
+        }
+
         return redirect()->route(
-            $pointage->submodule === 'camion_plateau' ? 'materiel.cost-control.camion-plateau' : 'materiel.cost-control.list'
+            $pointage->submodule === 'camion_plateau' ? 'materiel.cost-control.plateau.list' : 'materiel.cost-control.engin.list'
         )
             ->with('success', 'Pointage d\'engin mis à jour avec succès.');
     }
@@ -715,12 +754,23 @@ class VehicleCostControlController extends Controller
             ->with('success', 'Écriture financière supprimée avec succès.');
     }
 
-    public function destroy(VehiclePointage $pointage)
+    public function destroy(Pointage $pointage)
     {
         $mission = $pointage->mission;
         $submodule = $pointage->submodule;
+        $operationId = $pointage->operation_id;
+
         $pointage->delete();
         $this->syncMissionTimelineFromPointages($mission);
+
+        // Mettre à jour le montant à facturer du projet si un projet est associé
+        if ($operationId) {
+            try {
+                $this->financialService->updateMontantFacturer($operationId);
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la mise à jour du montant à facturer: ' . $e->getMessage());
+            }
+        }
 
         return redirect()->route(
             $submodule === 'camion_plateau' ? 'materiel.cost-control.camion-plateau' : 'materiel.cost-control.list'
@@ -737,6 +787,7 @@ class VehicleCostControlController extends Controller
         $rules = [
             'vehicle_mission_id' => $missionRule,
             'operation_id' => 'nullable|exists:operations,id|required_without:vehicle_mission_id',
+            'projet_id' => 'nullable|exists:operations,id',
             'vehicle_id' => 'nullable|exists:vehicules,id|required_without:vehicle_mission_id',
             'fournisseur_id' => 'nullable|string',
             'date_pointage' => 'required|date',
@@ -812,7 +863,7 @@ class VehicleCostControlController extends Controller
 
         // Déterminer si c'est Kenam ou un autre fournisseur
         $isKenam = ($data['fournisseur_id'] ?? null) === 'kenam';
-        
+
         // Si c'est Kenam, pas de coût fournisseur
         if ($isKenam) {
             $data['supplier_unit_cost'] = 0;
@@ -919,6 +970,11 @@ class VehicleCostControlController extends Controller
         $data['total_client_amount'] = $quantity * $clientUnitPrice;
         $data['created_by'] = Auth::id();
 
+        // Ajouter le projet_id si présent
+        if (isset($data['projet_id'])) {
+            $data['operation_id'] = $data['projet_id'];
+        }
+
         return $data;
     }
 
@@ -941,7 +997,7 @@ class VehicleCostControlController extends Controller
         }
 
         $firstPointageDate = $mission->pointages
-            ->min(fn (VehiclePointage $pointage) => optional($pointage->date_pointage)?->format('Y-m-d'));
+            ->min(fn (Pointage $pointage) => optional($pointage->date_pointage)?->format('Y-m-d'));
 
         if (!$firstPointageDate) {
             return;
@@ -1198,7 +1254,7 @@ class VehicleCostControlController extends Controller
         return $table ? Schema::hasColumn($table, $column) : false;
     }
 
-    private function hasVehiclePointagesTable(): bool
+    private function hasPointagesTable(): bool
     {
         return $this->pointageTableName() !== null;
     }
@@ -1210,7 +1266,7 @@ class VehicleCostControlController extends Controller
 
     private function pointageTableName(): ?string
     {
-        $preferredTable = (new VehiclePointage())->getTable();
+        $preferredTable = (new Pointage())->getTable();
 
         if (Schema::hasTable($preferredTable)) {
             return $preferredTable;

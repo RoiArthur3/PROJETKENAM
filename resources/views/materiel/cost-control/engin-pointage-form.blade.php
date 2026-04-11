@@ -21,13 +21,13 @@
 
     <form method="POST" action="{{ route('materiel.cost-control.engin.pointages.store') }}" id="pointageForm">
         @csrf
-        
+
         <!-- Champs cachés pour les données système -->
         <input type="hidden" name="submodule" value="engin">
         <input type="hidden" name="unit_type" value="heure">
         <input type="hidden" name="billing_mode" value="standard">
         <input type="hidden" name="statut" value="validé">
-        
+
         <!-- Champs calculés et cachés -->
         <input type="hidden" name="quantity" id="quantity_input" value="0">
         <input type="hidden" name="supplier_unit_cost" id="supplier_unit_cost_input" value="0">
@@ -36,31 +36,60 @@
         <div class="row g-4">
             <!-- Colonne principale -->
             <div class="col-lg-8">
-                <!-- ÉTAPE 1: Choix de l'engin -->
+                <!-- ÉTAPE 1: Choix du projet -->
                 <div class="card shadow-sm mb-4 border-start border-primary border-4">
                     <div class="card-header bg-light py-3">
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">1</div>
-                            <h6 class="ms-3 mb-0 fw-bold">Sélectionner l'engin</h6>
+                            <h6 class="ms-3 mb-0 fw-bold">Sélectionner le projet</h6>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Engin <span class="text-danger">*</span></label>
-                                <select name="vehicle_id" id="vehicle_id" class="form-select form-select-lg" required>
-                                    <option value="">-- Choisir un engin --</option>
-                                    @foreach($vehicles as $vehicle)
-                                        <option value="{{ $vehicle->id }}" 
-                                                data-immatriculation="{{ $vehicle->immatriculation }}"
-                                                data-marque="{{ $vehicle->marque }}"
-                                                data-modele="{{ $vehicle->modele }}">
-                                            {{ $vehicle->immatriculation }} - {{ $vehicle->marque }} {{ $vehicle->modele }}
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Projet <span class="text-danger">*</span></label>
+                                <select name="projet_id" id="projet_id" class="form-select form-select-lg" required>
+                                    <option value="">-- Choisir un projet --</option>
+                                    @foreach($projets as $projet)
+                                        <option value="{{ $projet->id }}"
+                                                data-titre="{{ $projet->titre }}"
+                                                data-client="{{ $projet->client ? $projet->client->raison_sociale : 'N/A' }}">
+                                            {{ $projet->titre }} - {{ $projet->client ? $projet->client->raison_sociale : 'N/A' }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('vehicle_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                @error('projet_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ÉTAPE 2: Choix de l'engin -->
+                <div class="card shadow-sm mb-4 border-start border-success border-4">
+                    <div class="card-header bg-light py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">2</div>
+                            <h6 class="ms-3 mb-0 fw-bold">Sélectionner l'engin</h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="engins_selection">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Veuillez d'abord sélectionner un projet pour voir les engins associés.
+                            </div>
+                        </div>
+                        <div id="engins_container" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold">Engin <span class="text-danger">*</span></label>
+                                    <select name="vehicle_id" id="vehicle_id" class="form-select form-select-lg" required>
+                                        <option value="">-- Choisir un engin --</option>
+                                    </select>
+                                    @error('vehicle_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                        </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Fournisseur / Propriétaire <span class="text-danger">*</span></label>
@@ -81,11 +110,11 @@
                     </div>
                 </div>
 
-                <!-- ÉTAPE 2: Récapitulatif fournisseur -->
+                <!-- ÉTAPE 3: Récapitulatif fournisseur -->
                 <div class="card shadow-sm mb-4 border-start border-warning border-4">
                     <div class="card-header bg-light py-3">
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">2</div>
+                            <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">3</div>
                             <h6 class="ms-3 mb-0 fw-bold">Récapitulatif fournisseur</h6>
                         </div>
                     </div>
@@ -95,48 +124,101 @@
                             <strong>Fournisseur sélectionné:</strong>
                             <span id="supplier_name_display" class="badge bg-info ms-2">Aucun fournisseur</span>
                         </div>
-                        <small class="text-muted">
-                            Les tarifs client et fournisseur sont basés sur la sélection de l'engin et du fournisseur propriétaire.
-                        </small>
-                    </div>
-                </div>
-
-                <!-- ÉTAPE 3: Pointage horaire -->
-                <div class="card shadow-sm mb-4 border-start border-success border-4">
-                    <div class="card-header bg-light py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold;">3</div>
-                            <h6 class="ms-3 mb-0 fw-bold">Pointage horaire</h6>
+                            </div>
+                            <div id="current_status" class="badge bg-secondary">
+                                <i class="fas fa-pause-circle me-1"></i>En attente
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-                                <input type="date" name="date_pointage" class="form-control form-control-lg" 
-                                       value="{{ old('date_pointage', now()->format('Y-m-d')) }}" required>
-                                @error('date_pointage')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                            </div>
+                        <!-- Mode automatique (par défaut) -->
+                        <div id="auto_mode">
+                            <div class="text-center py-4">
+                                <div id="pointage_display" class="mb-4" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-play-circle text-success fa-2x mb-2"></i>
+                                                    <h6 class="mb-1">Démarré à</h6>
+                                                    <h4 id="start_time_display" class="text-success fw-bold">--:--</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-primary text-white">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                                    <h6 class="mb-1">Durée actuelle</h6>
+                                                    <h4 id="current_duration" class="fw-bold">00:00:00</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-stop-circle text-danger fa-2x mb-2"></i>
+                                                    <h6 class="mb-1">Temps restant</h6>
+                                                    <h4 id="estimated_end" class="text-muted fw-bold">--:--</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Heure début <span class="text-danger">*</span></label>
-                                <input type="time" name="heure_debut" id="heure_debut" class="form-control form-control-lg" required>
-                                @error('heure_debut')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Heure fin <span class="text-danger">*</span></label>
-                                <input type="time" name="heure_fin" id="heure_fin" class="form-control form-control-lg" required>
-                                @error('heure_fin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Durée calculée:</strong> <span id="duration_calc">-- heures</span>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <button type="button" id="btn_start_pointage" class="btn btn-success btn-lg px-4" onclick="startPointage()">
+                                        <i class="fas fa-play me-2"></i>Démarrer le pointage
+                                    </button>
+                                    <button type="button" id="btn_stop_pointage" class="btn btn-danger btn-lg px-4" onclick="stopPointage()" style="display: none;">
+                                        <i class="fas fa-stop me-2"></i>Arrêter le pointage
+                                    </button>
                                 </div>
                             </div>
+
+                            <!-- Mode manuel (optionnel) -->
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleManualMode()">
+                                    <i class="fas fa-keyboard me-1"></i>Saisie manuelle
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- Mode manuel (caché par défaut) -->
+                        <div id="manual_mode" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Heure de début <span class="text-danger">*</span></label>
+                                    <input type="time" name="heure_debut" id="heure_debut" class="form-control form-control-lg">
+                                    @error('heure_debut')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Heure de fin <span class="text-danger">*</span></label>
+                                    <input type="time" name="heure_fin" id="heure_fin" class="form-control form-control-lg">
+                                    @error('heure_fin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-light d-flex align-items-center">
+                                        <i class="fas fa-clock me-2 text-info"></i>
+                                        <span class="fw-semibold">Durée calculée:</span>
+                                        <span id="duration_calc" class="ms-2 text-primary fw-bold">0 heures</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleManualMode()">
+                                    <i class="fas fa-mouse-pointer me-1"></i>Retour au mode automatique
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Champs cachés pour le mode automatique -->
+                        <input type="hidden" name="heure_debut" id="auto_heure_debut" value="">
+                        <input type="hidden" name="heure_fin" id="auto_heure_fin" value="">
                     </div>
                 </div>
 
@@ -156,8 +238,8 @@
                     </div>
                 </div>
 
-                <!-- Boutons d'action -->
-                <div class="d-flex gap-2">
+                <!-- Boutons d'action alignés à droite -->
+                <div class="d-flex gap-2 justify-content-end">
                     <button type="submit" class="btn btn-success btn-lg">
                         <i class="fas fa-save me-2"></i>Enregistrer le pointage
                     </button>
@@ -262,7 +344,7 @@
     .price-card {
         border-left: 4px solid #007bff;
     }
-    
+
     .sticky-top {
         z-index: 100;
     }
@@ -312,7 +394,7 @@
         const immatriculation = vehicleOption.dataset.immatriculation;
         const marque = vehicleOption.dataset.marque;
         const modele = vehicleOption.dataset.modele;
-        
+
         document.getElementById('summary_vehicle').innerHTML = `
             <div class="badge bg-info mb-2">${immatriculation}</div>
             <small class="text-muted">${marque} ${modele}</small>
@@ -324,25 +406,25 @@
 
         // Trouver les données du véhicule
         const vehicleData = vehiclesData.find(v => v.id == vehicleId);
-        
+
         // Déterminer si c'est Kenam ou un autre fournisseur
         const isKenam = supplierId === 'kenam';
-        
+
         if (isKenam) {
             document.getElementById('tarification_kenam').style.display = 'block';
             document.getElementById('tarification_supplier').style.display = 'none';
             document.getElementById('total_supplier_row').style.display = 'none';
-            
+
             const clientPrice = vehicleData?.client_price_per_hour || vehicleData?.prix_location || 0;
             document.getElementById('price_client_display').textContent = formatPrice(clientPrice);
         } else {
             document.getElementById('tarification_kenam').style.display = 'none';
             document.getElementById('tarification_supplier').style.display = 'block';
             document.getElementById('total_supplier_row').style.display = 'flex';
-            
+
             const supplierPrice = vehicleData?.supplier_price_per_hour || 0;
             const clientPrice = vehicleData?.client_price_per_hour || 0;
-            
+
             document.getElementById('price_supplier_display').textContent = formatPrice(supplierPrice);
             document.getElementById('price_client_supplier_display').textContent = formatPrice(clientPrice);
         }
@@ -370,13 +452,13 @@
         // Calculer la durée
         const [debutH, debutM] = debut.split(':').map(Number);
         const [finH, finM] = fin.split(':').map(Number);
-        
+
         let minutes = (finH * 60 + finM) - (debutH * 60 + debutM);
-        
+
         if (minutes < 0) {
             minutes += 24 * 60; // Ajouter 24h si fin < début (travail de nuit)
         }
-        
+
         const hours = (minutes / 60).toFixed(2);
         document.getElementById('duration_calc').textContent = hours + ' heures';
         document.getElementById('display_duration').textContent = hours + ' h';
@@ -405,15 +487,15 @@
 
         const vehicleData = vehiclesData.find(v => v.id == vehicleId);
         const isKenam = supplierId === 'kenam';
-        
+
         if (isKenam) {
             const clientPrice = vehicleData?.client_price_per_hour || vehicleData?.prix_location || 0;
             const totalClient = clientPrice * hours;
-            
+
             document.getElementById('total_client').textContent = formatPrice(totalClient);
             document.getElementById('total_margin').textContent = formatPrice(totalClient) + ' (sans coût)';
             document.getElementById('total_supplier_row').style.display = 'none';
-            
+
             // Mettre à jour les champs cachés
             document.getElementById('quantity_input').value = hours.toFixed(2);
             document.getElementById('supplier_unit_cost_input').value = 0;
@@ -429,12 +511,222 @@
             document.getElementById('total_client').textContent = formatPrice(totalClient);
             document.getElementById('total_margin').textContent = formatPrice(margin) + ' (' + (margin >= 0 ? '+' : '') + ((margin / totalClient * 100).toFixed(1)) + '%)';
             document.getElementById('total_supplier_row').style.display = 'flex';
-            
+
             // Mettre à jour les champs cachés
             document.getElementById('quantity_input').value = hours.toFixed(2);
             document.getElementById('supplier_unit_cost_input').value = supplierPrice.toFixed(2);
             document.getElementById('client_unit_price_input').value = clientPrice.toFixed(2);
         }
+    }
+
+    // Gestion de la sélection du projet
+    document.getElementById('projet_id').addEventListener('change', function() {
+        const projetId = this.value;
+        const enginsContainer = document.getElementById('engins_container');
+        const enginsSelection = document.getElementById('engins_selection');
+        const vehicleSelect = document.getElementById('vehicle_id');
+
+        if (!projetId) {
+            enginsContainer.style.display = 'none';
+            enginsSelection.style.display = 'block';
+            return;
+        }
+
+        // Charger les engins associés au projet via AJAX
+        fetch(`/api/projets/${projetId}/engins`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.engins.length > 0) {
+                    // Vider et remplir la liste des engins
+                    vehicleSelect.innerHTML = '<option value="">-- Choisir un engin --</option>';
+
+                    data.engins.forEach(engin => {
+                        const option = document.createElement('option');
+                        option.value = engin.id;
+                        option.setAttribute('data-immatriculation', engin.immatriculation);
+                        option.setAttribute('data-marque', engin.marque);
+                        option.setAttribute('data-modele', engin.modele);
+                        option.textContent = `${engin.immatriculation} - ${engin.marque} ${engin.modele}`;
+                        vehicleSelect.appendChild(option);
+                    });
+
+                    enginsContainer.style.display = 'block';
+                    enginsSelection.style.display = 'none';
+                } else {
+                    // Afficher un message si aucun engin n'est associé
+                    enginsSelection.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Aucun engin n'est associé à ce projet. Veuillez contacter l'administrateur.
+                        </div>
+                    `;
+                    enginsSelection.style.display = 'block';
+                    enginsContainer.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des engins:', error);
+                enginsSelection.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Erreur lors du chargement des engins. Veuillez réessayer.
+                    </div>
+                `;
+                enginsSelection.style.display = 'block';
+                enginsContainer.style.display = 'none';
+            });
+    });
+
+    // Variables globales pour le pointage automatique
+    let pointageTimer = null;
+    let pointageStartTime = null;
+    let isPointageActive = false;
+
+    // Fonctions de pointage automatique
+    function startPointage() {
+        // Vérifier que tous les champs requis sont remplis
+        const projetId = document.getElementById('projet_id').value;
+        const vehicleId = document.getElementById('vehicle_id').value;
+        const supplierId = document.getElementById('fournisseur_id').value;
+
+        if (!projetId || !vehicleId || !supplierId) {
+            alert('Veuillez d\'abord remplir toutes les étapes précédentes (projet, engin, fournisseur).');
+            return;
+        }
+
+        // Démarrer le pointage
+        pointageStartTime = new Date();
+        isPointageActive = true;
+
+        // Mettre à jour l'interface
+        document.getElementById('btn_start_pointage').style.display = 'none';
+        document.getElementById('btn_stop_pointage').style.display = 'inline-block';
+        document.getElementById('pointage_display').style.display = 'block';
+        document.getElementById('current_status').className = 'badge bg-success';
+        document.getElementById('current_status').innerHTML = '<i class="fas fa-play-circle me-1"></i>Pointage en cours';
+
+        // Afficher l'heure de début
+        const startTimeStr = pointageStartTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('start_time_display').textContent = startTimeStr;
+        document.getElementById('auto_heure_debut').value = startTimeStr;
+
+        // Démarrer le timer
+        updateDuration();
+        pointageTimer = setInterval(updateDuration, 1000);
+
+        // Estimer l'heure de fin (8 heures standard)
+        const estimatedEnd = new Date(pointageStartTime.getTime() + 8 * 60 * 60 * 1000);
+        document.getElementById('estimated_end').textContent = estimatedEnd.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function stopPointage() {
+        if (!isPointageActive) return;
+
+        // Arrêter le timer
+        if (pointageTimer) {
+            clearInterval(pointageTimer);
+            pointageTimer = null;
+        }
+
+        // Enregistrer l'heure de fin
+        const endTime = new Date();
+        const endTimeStr = endTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('auto_heure_fin').value = endTimeStr;
+
+        // Calculer la durée
+        const duration = (endTime - pointageStartTime) / 1000 / 60 / 60; // en heures
+        const durationStr = duration.toFixed(2) + ' heures';
+
+        // Mettre à jour l'interface
+        document.getElementById('btn_start_pointage').style.display = 'inline-block';
+        document.getElementById('btn_stop_pointage').style.display = 'none';
+        document.getElementById('current_status').className = 'badge bg-danger';
+        document.getElementById('current_status').innerHTML = '<i class="fas fa-stop-circle me-1"></i>Pointage terminé';
+
+        // Mettre à jour les champs cachés et calculer les totaux
+        document.getElementById('quantity_input').value = duration.toFixed(2);
+
+        // Mettre à jour l'affichage de la durée
+        document.getElementById('duration_calc').textContent = durationStr;
+        document.getElementById('display_duration').textContent = duration.toFixed(2) + ' h';
+
+        // Calculer les totaux
+        updateTotals();
+
+        // Réinitialiser les variables
+        isPointageActive = false;
+        pointageStartTime = null;
+
+        // Afficher un message de confirmation
+        showPointageSummary(duration);
+    }
+
+    function updateDuration() {
+        if (!isPointageActive || !pointageStartTime) return;
+
+        const now = new Date();
+        const elapsed = now - pointageStartTime;
+
+        // Formater en HH:MM:SS
+        const hours = Math.floor(elapsed / 1000 / 60 / 60);
+        const minutes = Math.floor((elapsed / 1000 / 60) % 60);
+        const seconds = Math.floor((elapsed / 1000) % 60);
+
+        const durationStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById('current_duration').textContent = durationStr;
+    }
+
+    function toggleManualMode() {
+        const autoMode = document.getElementById('auto_mode');
+        const manualMode = document.getElementById('manual_mode');
+
+        if (autoMode.style.display === 'none') {
+            autoMode.style.display = 'block';
+            manualMode.style.display = 'none';
+        } else {
+            autoMode.style.display = 'none';
+            manualMode.style.display = 'block';
+        }
+    }
+
+    function showPointageSummary(duration) {
+        const supplierId = document.getElementById('fournisseur_id').value;
+        const vehicleId = document.getElementById('vehicle_id').value;
+        const vehicleData = vehiclesData.find(v => v.id == vehicleId);
+
+        let summary = `Pointage terminé !\n\n`;
+        summary += `Durée: ${duration.toFixed(2)} heures\n`;
+
+        if (supplierId === 'kenam') {
+            const clientPrice = vehicleData?.client_price_per_hour || vehicleData?.prix_location || 0;
+            summary += `Coût total: ${formatPrice(clientPrice * duration)}\n`;
+            summary += `(Fournisseur interne - pas de coût fournisseur)`;
+        } else {
+            const supplierPrice = vehicleData?.supplier_price_per_hour || 0;
+            const clientPrice = vehicleData?.client_price_per_hour || 0;
+            const margin = (clientPrice - supplierPrice) * duration;
+            summary += `Coût fournisseur: ${formatPrice(supplierPrice * duration)}\n`;
+            summary += `Montant client: ${formatPrice(clientPrice * duration)}\n`;
+            summary += `Marge: ${formatPrice(margin)}`;
+        }
+
+        // Afficher dans une alerte stylisée
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Pointage enregistré!</h6>
+            <pre class="mb-0">${summary}</pre>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+
+        // Auto-suppression après 5 secondes
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
     }
 
     function formatPrice(value) {
